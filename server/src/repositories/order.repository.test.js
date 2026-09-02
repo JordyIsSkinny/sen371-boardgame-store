@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-import { createOrder, getOrdersByUser, getOrderById } from './order.repository.js';
-
-const prisma = new PrismaClient();
-let testUser, testRole, testProduct, testAddress;
+import prisma from '../config/prismaClient.js';
+import { createOrder, getOrdersByUser, getOrderById } from './order.repository.js';let testUser, testRole, testProduct, testAddress;
 
 beforeAll(async () => {
   testRole = await prisma.role.upsert({

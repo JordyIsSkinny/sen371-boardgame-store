@@ -1,18 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/prismaClient.js';
 import { filterProducts } from './product.repository.js';
 
-const prisma = new PrismaClient();
 const productIds = [];
-let category, mechanic;
+let category;
 
 beforeAll(async () => {
   category = await prisma.category.create({
     data: { name: `Strategy Filter Test ${Date.now()}`, slug: `strategy-filter-${Date.now()}` },
-  });
-
-  mechanic = await prisma.mechanic.create({
-    data: { name: `Worker Placement Filter Test ${Date.now()}`, slug: `worker-placement-filter-${Date.now()}` },
   });
 
   const productA = await prisma.product.create({
@@ -26,7 +21,6 @@ beforeAll(async () => {
       complexityRating: 1.5,
       price: 300,
       categories: { create: { categoryId: category.id } },
-      mechanics: { create: { mechanicId: mechanic.id } },
     },
   });
   productIds.push(productA.id);
@@ -48,10 +42,8 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await prisma.productCategory.deleteMany({ where: { productId: { in: productIds } } });
-  await prisma.productMechanic.deleteMany({ where: { productId: { in: productIds } } });
   await prisma.product.deleteMany({ where: { id: { in: productIds } } });
   await prisma.category.delete({ where: { id: category.id } });
-  await prisma.mechanic.delete({ where: { id: mechanic.id } });
   await prisma.$disconnect();
 });
 
@@ -65,13 +57,6 @@ describe('filterProducts', () => {
 
   it('filters by category', async () => {
     const result = await filterProducts({ categoryId: category.id });
-    const titles = result.items.map((p) => p.title);
-    expect(titles).toContain('Small Fast Game');
-    expect(titles).not.toContain('Big Long Game');
-  });
-
-  it('filters by mechanic', async () => {
-    const result = await filterProducts({ mechanicId: mechanic.id });
     const titles = result.items.map((p) => p.title);
     expect(titles).toContain('Small Fast Game');
     expect(titles).not.toContain('Big Long Game');

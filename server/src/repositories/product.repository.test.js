@@ -1,5 +1,6 @@
+import prisma from '../config/prismaClient.js';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/prismaClient.js';
 import {
   getProductById,
   getAllProducts,
@@ -7,8 +8,6 @@ import {
   updateProduct,
   deleteProduct,
 } from './product.repository.js';
-
-const prisma = new PrismaClient();
 let testProduct;
 const createdIds = [];
 

@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../config/prismaClient.js';
 
 export async function getProductById(id) {
   return prisma.product.findUnique({
@@ -36,7 +34,6 @@ export async function deleteProduct(id) {
 export async function filterProducts({
   playerCount,
   categoryId,
-  mechanicId,
   maxPlayTime,
   sortBy = 'createdAt',
   sortDir = 'desc',
@@ -45,8 +42,6 @@ export async function filterProducts({
 } = {}) {
   const where = { isActive: true };
 
-  // Player count: product must support this many players
-  // i.e. minPlayers <= playerCount <= maxPlayers
   if (playerCount !== undefined) {
     where.minPlayers = { lte: Number(playerCount) };
     where.maxPlayers = { gte: Number(playerCount) };
@@ -59,12 +54,6 @@ export async function filterProducts({
   if (categoryId !== undefined) {
     where.categories = {
       some: { categoryId: Number(categoryId) },
-    };
-  }
-
-  if (mechanicId !== undefined) {
-    where.mechanics = {
-      some: { mechanicId: Number(mechanicId) },
     };
   }
 

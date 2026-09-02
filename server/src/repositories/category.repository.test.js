@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/prismaClient.js';
 import { getAllCategories } from './category.repository.js';
 
-const prisma = new PrismaClient();
 let testCategory;
 
 beforeAll(async () => {

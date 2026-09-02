@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../config/prismaClient.js';
 
 export async function createOrder({ userId, addressId, items }) {
   return prisma.$transaction(async (tx) => {
@@ -54,8 +52,8 @@ export async function createOrder({ userId, addressId, items }) {
       include: { items: true },
     });
 
-    return order;
-  });
+     return order;
+  }, { timeout: 15000 });
 }
 
 export async function getOrdersByUser(userId) {
