@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import { getProductById } from './product.repository.js';
+import { getProductById, getAllProducts } from './product.repository.js';
 
 const prisma = new PrismaClient();
 let testProduct;
@@ -35,5 +35,13 @@ describe('getProductById', () => {
   it('returns null when the product does not exist', async () => {
     const result = await getProductById(999999);
     expect(result).toBeNull();
+  });
+});
+
+describe('getAllProducts', () => {
+  it('returns a list including the seeded test product', async () => {
+    const results = await getAllProducts();
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.some((p) => p.id === testProduct.id)).toBe(true);
   });
 });

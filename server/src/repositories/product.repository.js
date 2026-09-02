@@ -7,3 +7,10 @@ export async function getProductById(id) {
     where: { id },
   });
 }
+
+export async function getAllProducts() {
+  return prisma.product.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: 'desc' },
+  });
+}
