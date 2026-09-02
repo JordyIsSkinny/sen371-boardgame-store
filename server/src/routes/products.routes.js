@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { getAllProducts, getProductById } from '../repositories/product.repository.js';
+import {
+  getAllProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from '../repositories/product.repository.js';
 
 const router = Router();
 
@@ -21,6 +27,35 @@ router.get('/:id', async (req, res) => {
     res.json({ data: product });
   } catch (err) {
     res.status(500).json({ error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// Admin routes — NOT yet role-gated. D's authorize('ADMIN') middleware
+// needs to be added here once available. Flagged in PR.
+router.post('/', async (req, res) => {
+  try {
+    const product = await createProduct(req.body);
+    res.status(201).json({ data: product });
+  } catch (err) {
+    res.status(400).json({ error: { code: 'CREATE_FAILED', message: err.message } });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const product = await updateProduct(Number(req.params.id), req.body);
+    res.json({ data: product });
+  } catch (err) {
+    res.status(400).json({ error: { code: 'UPDATE_FAILED', message: err.message } });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const product = await deleteProduct(Number(req.params.id));
+    res.json({ data: product });
+  } catch (err) {
+    res.status(400).json({ error: { code: 'DELETE_FAILED', message: err.message } });
   }
 });
 
