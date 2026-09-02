@@ -1,4 +1,4 @@
-import prisma from '../config/prismaClient.js';
+import { prisma } from '../lib/prismaClient.js';
 
 export async function getAllCategories() {
   return prisma.category.findMany({

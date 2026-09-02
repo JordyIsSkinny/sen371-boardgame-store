@@ -1,4 +1,4 @@
-import prisma from '../config/prismaClient.js';
+import { prisma } from '../lib/prismaClient.js';
 
 export async function createOrder({ userId, addressId, items }) {
   return prisma.$transaction(async (tx) => {

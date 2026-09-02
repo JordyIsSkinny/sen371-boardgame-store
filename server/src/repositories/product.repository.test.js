@@ -1,6 +1,6 @@
-import prisma from '../config/prismaClient.js';
+import { prisma } from '../lib/prismaClient.js';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import prisma from '../config/prismaClient.js';
+import { prisma } from '../lib/prismaClient.js';
 import {
   getProductById,
   getAllProducts,

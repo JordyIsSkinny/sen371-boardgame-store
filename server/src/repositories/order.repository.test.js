@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import prisma from '../config/prismaClient.js';
-import { createOrder, getOrdersByUser, getOrderById } from './order.repository.js';let testUser, testRole, testProduct, testAddress;
+import { prisma } from '../lib/prismaClient.js';
+import { createOrder, getOrdersByUser, getOrderById } from './order.repository.js';
+
+let testUser, testRole, testProduct, testAddress;
 
 beforeAll(async () => {
   testRole = await prisma.role.upsert({
@@ -43,7 +45,7 @@ beforeAll(async () => {
       inventory: { create: { quantityOnHand: 50 } },
     },
   });
-});
+}, 15000);
 
 afterAll(async () => {
   await prisma.orderItem.deleteMany({ where: { productId: testProduct.id } });

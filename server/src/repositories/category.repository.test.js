@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import prisma from '../config/prismaClient.js';
+import { prisma } from '../lib/prismaClient.js';
 import { getAllCategories } from './category.repository.js';
 
 let testCategory;

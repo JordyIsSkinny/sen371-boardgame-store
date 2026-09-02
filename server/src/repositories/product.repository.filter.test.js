@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import prisma from '../config/prismaClient.js';
+import { prisma } from '../lib/prismaClient.js';
 import { filterProducts } from './product.repository.js';
 
 const productIds = [];
