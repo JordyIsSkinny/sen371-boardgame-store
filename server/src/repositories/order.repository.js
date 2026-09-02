@@ -57,3 +57,18 @@ export async function createOrder({ userId, addressId, items }) {
     return order;
   });
 }
+
+export async function getOrdersByUser(userId) {
+  return prisma.order.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    include: { items: true },
+  });
+}
+
+export async function getOrderById(id) {
+  return prisma.order.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+}

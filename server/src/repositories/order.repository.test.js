@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import { createOrder } from './order.repository.js';
+import { createOrder, getOrdersByUser, getOrderById } from './order.repository.js';
 
 const prisma = new PrismaClient();
 let testUser, testRole, testProduct, testAddress;
@@ -43,7 +43,7 @@ beforeAll(async () => {
       minAge: 10,
       complexityRating: 2.3,
       price: 650.0,
-      inventory: { create: { quantityOnHand: 10 } },
+      inventory: { create: { quantityOnHand: 50 } },
     },
   });
 });
@@ -74,7 +74,7 @@ describe('createOrder', () => {
       const updatedInventory = await prisma.inventory.findUnique({
         where: { productId: testProduct.id },
       });
-      expect(updatedInventory.quantityOnHand).toBe(8);
+      expect(updatedInventory.quantityOnHand).toBe(48);
     },
     15000
   );
@@ -87,5 +87,46 @@ describe('createOrder', () => {
         items: [{ productId: testProduct.id, quantity: 999 }],
       })
     ).rejects.toThrow();
+  });
+});
+
+describe('getOrdersByUser', () => {
+  it(
+    'returns orders belonging to the user',
+    async () => {
+      const order = await createOrder({
+        userId: testUser.id,
+        addressId: testAddress.id,
+        items: [{ productId: testProduct.id, quantity: 1 }],
+      });
+
+      const orders = await getOrdersByUser(testUser.id);
+      expect(Array.isArray(orders)).toBe(true);
+      expect(orders.some((o) => o.id === order.id)).toBe(true);
+    },
+    15000
+  );
+});
+
+describe('getOrderById', () => {
+  it(
+    'returns the order with its items',
+    async () => {
+      const created = await createOrder({
+        userId: testUser.id,
+        addressId: testAddress.id,
+        items: [{ productId: testProduct.id, quantity: 1 }],
+      });
+
+      const found = await getOrderById(created.id);
+      expect(found).not.toBeNull();
+      expect(found.items.length).toBeGreaterThan(0);
+    },
+    15000
+  );
+
+  it('returns null for a nonexistent order', async () => {
+    const found = await getOrderById(999999);
+    expect(found).toBeNull();
   });
 });
