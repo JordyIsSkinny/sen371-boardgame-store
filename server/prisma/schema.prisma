@@ -1,0 +1,54 @@
+// PROVISIONAL, C owns the authoritative schema (Database Integration).
+// This covers only User, Product and CartItem, the minimum needed to build
+// and test the cart vertical slice in isolation on Monday night. When C
+// pushes the real schema, this file gets replaced wholesale, not merged
+// field by field, C's push is the source of truth from that point on.
+//
+// Field names and constraints below match Milestone 1's Database Design
+// Schema (Section 5) exactly, so replacing this should be close to a
+// no-op for the cart slice specifically.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  firstName String     @map("first_name")
+  lastName  String     @map("last_name")
+  createdAt DateTime   @default(now()) @map("created_at")
+  cartItems CartItem[]
+
+  @@map("users")
+}
+
+model Product {
+  id        Int        @id @default(autoincrement())
+  title     String
+  slug      String     @unique
+  price     Decimal    @db.Decimal(10, 2)
+  isActive  Boolean    @default(true) @map("is_active")
+  cartItems CartItem[]
+
+  @@map("products")
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  productId Int      @map("product_id")
+  quantity  Int
+  addedAt   DateTime @default(now()) @map("added_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
