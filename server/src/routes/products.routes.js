@@ -5,12 +5,32 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  filterProducts,
 } from '../repositories/product.repository.js';
 
 const router = Router();
 
 router.get('/', async (req, res) => {
   try {
+    const { playerCount, categoryId, mechanicId, maxPlayTime, sortBy, sortDir, page, pageSize } = req.query;
+
+    const hasFilters =
+      playerCount || categoryId || mechanicId || maxPlayTime || sortBy || sortDir || page || pageSize;
+
+    if (hasFilters) {
+      const result = await filterProducts({
+        playerCount,
+        categoryId,
+        mechanicId,
+        maxPlayTime,
+        sortBy,
+        sortDir,
+        page,
+        pageSize,
+      });
+      return res.json(result);
+    }
+
     const products = await getAllProducts();
     res.json({ data: products });
   } catch (err) {
@@ -30,8 +50,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Admin routes — NOT yet role-gated. D's authorize('ADMIN') middleware
-// needs to be added here once available. Flagged in PR.
 router.post('/', async (req, res) => {
   try {
     const product = await createProduct(req.body);
