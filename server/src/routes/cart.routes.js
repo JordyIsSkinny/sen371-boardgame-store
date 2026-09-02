@@ -1,15 +1,17 @@
 import { Router } from "express";
-import { authenticateStub } from "../middleware/auth.stub.js";
+import { authenticate } from "../middleware/authenticate.stub.js";
+import { authorize } from "../middleware/authorize.stub.js";
 import * as cartController from "../controllers/cart.controller.js";
 
 // Endpoint ownership (Milestone 2, Section 2): B owns all four cart routes.
-// authenticateStub occupies the auth slot until D's real middleware lands
-// Tuesday; swapping it out should be a one-line import change here, that's
-// the whole point of keeping auth behind a single middleware boundary.
+// Per D's RBAC application table: authenticate -> authorize('customer',
+// 'admin'). Both middleware are stubs owned by D, replace ASAP; the import
+// paths here are the only thing that should need to change.
 
 const router = Router();
 
-router.use(authenticateStub);
+router.use(authenticate);
+router.use(authorize("customer", "admin"));
 
 router.get("/", cartController.getCart);
 router.post("/items", cartController.addItem);

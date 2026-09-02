@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mocked before import so cart.service.js receives the mock, not the real
-// repository. This is what "controllers/services testable without a real
-// database" (Milestone 1, Repository Pattern) actually looks like in code.
 vi.mock("../repositories/cart.repository.js", () => ({
   findCartItemsByUserId: vi.fn(),
   findCartItemById: vi.fn(),
@@ -12,38 +9,61 @@ vi.mock("../repositories/cart.repository.js", () => ({
   deleteCartItem: vi.fn(),
 }));
 
-vi.mock("../lib/prismaClient.js", () => ({
-  prisma: { product: { findUnique: vi.fn() } },
+vi.mock("../repositories/product.repository.js", () => ({
+  getProductById: vi.fn(),
 }));
 
 const cartRepository = await import("../repositories/cart.repository.js");
-const { prisma } = await import("../lib/prismaClient.js");
+const productRepository = await import("../repositories/product.repository.js");
 const cartService = await import("./cart.service.js");
+
+const mockProduct = { id: 1, title: "Wingspan", slug: "wingspan", price: "45.00", isActive: true };
 
 describe("cart.service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+  describe("getCart", () => {
+    it("shapes items and computes a numeric subtotal", async () => {
+      cartRepository.findCartItemsByUserId.mockResolvedValue([
+        { id: 1, productId: 1, quantity: 2, addedAt: new Date(), product: mockProduct },
+      ]);
+
+      const cart = await cartService.getCart(1);
+
+      expect(cart.subtotal).toBe(90);
+      expect(cart.items[0].product.price).toBe(45);
+      expect(cart.items[0].lineTotal).toBe(90);
+    });
+  });
+
   describe("addItem", () => {
     it("rejects a non-positive quantity", async () => {
       await expect(cartService.addItem(1, { productId: 1, quantity: 0 })).rejects.toMatchObject({
         status: 422,
-        code: "INVALID_QUANTITY",
+        error: "VALIDATION_ERROR",
       });
     });
 
     it("rejects a product that does not exist", async () => {
-      prisma.product.findUnique.mockResolvedValue(null);
+      productRepository.getProductById.mockResolvedValue(null);
 
       await expect(
         cartService.addItem(1, { productId: 999, quantity: 1 }),
-      ).rejects.toMatchObject({ status: 404, code: "PRODUCT_NOT_FOUND" });
+      ).rejects.toMatchObject({ status: 404, error: "NOT_FOUND" });
     });
 
     it("increases quantity instead of duplicating when the item already exists", async () => {
-      prisma.product.findUnique.mockResolvedValue({ id: 1, isActive: true });
+      productRepository.getProductById.mockResolvedValue(mockProduct);
       cartRepository.findCartItemByUserAndProduct.mockResolvedValue({ id: 10, quantity: 2 });
+      cartRepository.updateCartItemQuantity.mockResolvedValue({
+        id: 10,
+        productId: 1,
+        quantity: 5,
+        addedAt: new Date(),
+        product: mockProduct,
+      });
 
       await cartService.addItem(1, { productId: 1, quantity: 3 });
 
@@ -52,8 +72,15 @@ describe("cart.service", () => {
     });
 
     it("creates a new cart item when none exists yet", async () => {
-      prisma.product.findUnique.mockResolvedValue({ id: 1, isActive: true });
+      productRepository.getProductById.mockResolvedValue(mockProduct);
       cartRepository.findCartItemByUserAndProduct.mockResolvedValue(null);
+      cartRepository.createCartItem.mockResolvedValue({
+        id: 11,
+        productId: 1,
+        quantity: 2,
+        addedAt: new Date(),
+        product: mockProduct,
+      });
 
       await cartService.addItem(1, { productId: 1, quantity: 2 });
 
@@ -66,12 +93,12 @@ describe("cart.service", () => {
   });
 
   describe("removeItem", () => {
-    it("returns 404 rather than 403 when the item belongs to someone else", async () => {
+    it("returns NotFoundError (not Forbidden) when the item belongs to someone else", async () => {
       cartRepository.findCartItemById.mockResolvedValue({ id: 5, userId: 2 });
 
       await expect(cartService.removeItem(1, 5)).rejects.toMatchObject({
         status: 404,
-        code: "CART_ITEM_NOT_FOUND",
+        error: "NOT_FOUND",
       });
     });
   });

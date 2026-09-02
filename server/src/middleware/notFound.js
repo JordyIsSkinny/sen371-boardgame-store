@@ -1,10 +1,5 @@
-// Catches any request that didn't match a route. Sits after all route
-// mounts and before errorHandler, so it flows through the same error shape.
+import NotFoundError from "../errors/not-found-error.js";
 
 export function notFound(req, res, next) {
-  next({
-    status: 404,
-    code: "ROUTE_NOT_FOUND",
-    message: `No route for ${req.method} ${req.originalUrl}`,
-  });
+  next(new NotFoundError(`No route for ${req.method} ${req.originalUrl}`));
 }

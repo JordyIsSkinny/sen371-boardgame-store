@@ -1,50 +1,52 @@
 import * as cartRepository from "../repositories/cart.repository.js";
-import { prisma } from "../lib/prismaClient.js";
+import * as productRepository from "../repositories/product.repository.js";
+import { toCartView, toCartItemView } from "../models/cart.model.js";
+import ValidationError from "../errors/validation-error.js";
+import NotFoundError from "../errors/not-found-error.js";
 
 // Service layer: business rules live here, not in the controller and not
 // in the repository. The controller shouldn't know quantity has to be a
 // positive integer, and the repository shouldn't know what "add to cart"
 // means as a business action, it just executes queries.
+//
+// Throws A's actual AppError subclasses, not plain object literals.
+// A's errorHandler only catches `instanceof AppError`; anything else falls
+// through to a generic 500. That's not a hypothetical, it was silently
+// swallowing every 4xx this file threw until this fix.
 
 export async function getCart(userId) {
   const items = await cartRepository.findCartItemsByUserId(userId);
-  const subtotal = items.reduce(
-    (sum, item) => sum + Number(item.product.price) * item.quantity,
-    0,
-  );
-  return { items, subtotal };
+  return toCartView(items);
 }
 
 export async function addItem(userId, { productId, quantity }) {
   if (!Number.isInteger(quantity) || quantity <= 0) {
-    throw { status: 422, code: "INVALID_QUANTITY", message: "Quantity must be a positive integer." };
+    throw new ValidationError("Quantity must be a positive integer.");
   }
 
-  const product = await prisma.product.findUnique({ where: { id: productId } });
+  const product = await productRepository.getProductById(productId);
   if (!product || !product.isActive) {
-    throw { status: 404, code: "PRODUCT_NOT_FOUND", message: "Product does not exist." };
+    throw new NotFoundError("Product does not exist.");
   }
 
   const existing = await cartRepository.findCartItemByUserAndProduct(userId, productId);
-  if (existing) {
-    // Adding an already-present product increases quantity rather than
-    // erroring or creating a duplicate row; matches the UNIQUE(user_id,
-    // product_id) constraint on cart_items from C's schema.
-    return cartRepository.updateCartItemQuantity(existing.id, existing.quantity + quantity);
-  }
+  const item = existing
+    ? await cartRepository.updateCartItemQuantity(existing.id, existing.quantity + quantity)
+    : await cartRepository.createCartItem({ userId, productId, quantity });
 
-  return cartRepository.createCartItem({ userId, productId, quantity });
+  return toCartItemView(item);
 }
 
 export async function updateItemQuantity(userId, itemId, quantity) {
   if (!Number.isInteger(quantity) || quantity <= 0) {
-    throw { status: 422, code: "INVALID_QUANTITY", message: "Quantity must be a positive integer." };
+    throw new ValidationError("Quantity must be a positive integer.");
   }
 
-  const item = await cartRepository.findCartItemById(itemId);
-  assertOwnership(item, userId);
+  const existing = await cartRepository.findCartItemById(itemId);
+  assertOwnership(existing, userId);
 
-  return cartRepository.updateCartItemQuantity(itemId, quantity);
+  const item = await cartRepository.updateCartItemQuantity(itemId, quantity);
+  return toCartItemView(item);
 }
 
 export async function removeItem(userId, itemId) {
@@ -55,13 +57,7 @@ export async function removeItem(userId, itemId) {
 }
 
 function assertOwnership(item, userId) {
-  if (!item) {
-    throw { status: 404, code: "CART_ITEM_NOT_FOUND", message: "Cart item does not exist." };
-  }
-  if (item.userId !== userId) {
-    // Deliberately the same 404 a nonexistent item would return, rather
-    // than 403, so this endpoint doesn't confirm to an attacker that a
-    // given cart item id belongs to someone else.
-    throw { status: 404, code: "CART_ITEM_NOT_FOUND", message: "Cart item does not exist." };
+  if (!item || item.userId !== userId) {
+    throw new NotFoundError("Cart item does not exist.");
   }
 }
