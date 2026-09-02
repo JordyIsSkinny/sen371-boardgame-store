@@ -32,3 +32,63 @@ export async function deleteProduct(id) {
     data: { isActive: false },
   });
 }
+
+export async function filterProducts({
+  playerCount,
+  categoryId,
+  mechanicId,
+  maxPlayTime,
+  sortBy = 'createdAt',
+  sortDir = 'desc',
+  page = 1,
+  pageSize = 20,
+} = {}) {
+  const where = { isActive: true };
+
+  // Player count: product must support this many players
+  // i.e. minPlayers <= playerCount <= maxPlayers
+  if (playerCount !== undefined) {
+    where.minPlayers = { lte: Number(playerCount) };
+    where.maxPlayers = { gte: Number(playerCount) };
+  }
+
+  if (maxPlayTime !== undefined) {
+    where.playTimeMinutes = { lte: Number(maxPlayTime) };
+  }
+
+  if (categoryId !== undefined) {
+    where.categories = {
+      some: { categoryId: Number(categoryId) },
+    };
+  }
+
+  if (mechanicId !== undefined) {
+    where.mechanics = {
+      some: { mechanicId: Number(mechanicId) },
+    };
+  }
+
+  const allowedSortFields = ['price', 'createdAt', 'title', 'complexityRating'];
+  const orderByField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+  const orderByDir = sortDir === 'asc' ? 'asc' : 'desc';
+
+  const skip = (Number(page) - 1) * Number(pageSize);
+  const take = Number(pageSize);
+
+  const [items, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { [orderByField]: orderByDir },
+      skip,
+      take,
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return {
+    items,
+    total,
+    page: Number(page),
+    pageSize: Number(pageSize),
+  };
+}
