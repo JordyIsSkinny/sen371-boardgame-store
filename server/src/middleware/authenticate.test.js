@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeAll } from 'vitest';
 import jwt from 'jsonwebtoken';
 import { authenticate } from './authenticate.js';
 import { signAccessToken } from '../services/token.service.js';
+import AppError from '../errors/app-error.js';
+import UnauthorizedError from '../errors/unauthorized-error.js';
 
 const USER = { id: 1, role: 'customer', email: 'jane@example.com' };
 
@@ -16,6 +18,9 @@ function mockReq(authorization) {
 }
 
 const mockRes = () => ({});
+
+/** The error passed to next() by the middleware under test. */
+const errorFrom = (next) => next.mock.calls[0][0];
 
 describe('authenticate', () => {
   it('attaches id, role and email to req.user for a valid token', () => {
@@ -47,27 +52,27 @@ describe('authenticate', () => {
     const next = vi.fn();
     authenticate(mockReq(), mockRes(), next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 401, error: 'UNAUTHORIZED' })
-    );
+    expect(errorFrom(next)).toBeInstanceOf(UnauthorizedError);
+    expect(errorFrom(next)).toMatchObject({
+      status: 401,
+      error: 'UNAUTHORIZED',
+    });
   });
 
   it('rejects a header that is not a Bearer scheme', () => {
     const next = vi.fn();
     authenticate(mockReq('Basic abc123'), mockRes(), next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 401, error: 'UNAUTHORIZED' })
-    );
+    expect(errorFrom(next)).toBeInstanceOf(UnauthorizedError);
+    expect(errorFrom(next)).toMatchObject({ status: 401 });
   });
 
   it('rejects a Bearer header with no token', () => {
     const next = vi.fn();
     authenticate(mockReq('Bearer '), mockRes(), next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 401 })
-    );
+    expect(errorFrom(next)).toBeInstanceOf(UnauthorizedError);
+    expect(errorFrom(next)).toMatchObject({ status: 401 });
   });
 
   it('rejects a token signed with a different secret', () => {
@@ -76,9 +81,11 @@ describe('authenticate', () => {
 
     authenticate(mockReq(`Bearer ${forged}`), mockRes(), next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 401, error: 'UNAUTHORIZED' })
-    );
+    expect(errorFrom(next)).toBeInstanceOf(UnauthorizedError);
+    expect(errorFrom(next)).toMatchObject({
+      status: 401,
+      error: 'UNAUTHORIZED',
+    });
   });
 
   it('rejects a token using the none algorithm', () => {
@@ -89,9 +96,8 @@ describe('authenticate', () => {
 
     authenticate(mockReq(`Bearer ${unsigned}`), mockRes(), next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 401 })
-    );
+    expect(errorFrom(next)).toBeInstanceOf(UnauthorizedError);
+    expect(errorFrom(next)).toMatchObject({ status: 401 });
   });
 
   it('returns TOKEN_EXPIRED specifically for an expired token', () => {
@@ -104,11 +110,15 @@ describe('authenticate', () => {
 
     authenticate(mockReq(`Bearer ${expired}`), mockRes(), next);
 
-    // Distinct from UNAUTHORIZED so the client knows to attempt a silent
-    // refresh rather than sending the user back to the login screen.
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 401, error: 'TOKEN_EXPIRED' })
-    );
+    // Deliberately AppError rather than UnauthorizedError: that subclass fixes
+    // the code to UNAUTHORIZED, and the client needs to tell an expired token
+    // (attempt a silent refresh) from an invalid one (send them to login).
+    expect(errorFrom(next)).toBeInstanceOf(AppError);
+    expect(errorFrom(next)).not.toBeInstanceOf(UnauthorizedError);
+    expect(errorFrom(next)).toMatchObject({
+      status: 401,
+      error: 'TOKEN_EXPIRED',
+    });
   });
 
   it('never leaves req.user set on a rejected request', () => {

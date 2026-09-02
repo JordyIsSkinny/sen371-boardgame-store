@@ -1,7 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { authorize } from './authorize.js';
+import UnauthorizedError from '../errors/unauthorized-error.js';
+import ForbiddenError from '../errors/forbidden-error.js';
 
 const mockRes = () => ({});
+
+/** The error passed to next() by the middleware under test. */
+const errorFrom = (next) => next.mock.calls[0][0];
 
 describe('authorize', () => {
   it('allows a user whose role is in the list', () => {
@@ -28,9 +33,8 @@ describe('authorize', () => {
     const next = vi.fn();
     authorize('admin')({ user: { id: 1, role: 'customer' } }, mockRes(), next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 403, error: 'FORBIDDEN' })
-    );
+    expect(errorFrom(next)).toBeInstanceOf(ForbiddenError);
+    expect(errorFrom(next)).toMatchObject({ status: 403, error: 'FORBIDDEN' });
   });
 
   it('rejects with 401 rather than 403 when req.user is absent', () => {
@@ -40,9 +44,11 @@ describe('authorize', () => {
     // Means authenticate was not applied ahead of this middleware. 401 is
     // correct: we do not know who the caller is, so we cannot say they are
     // forbidden.
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 401 })
-    );
+    expect(errorFrom(next)).toBeInstanceOf(UnauthorizedError);
+    expect(errorFrom(next)).toMatchObject({
+      status: 401,
+      error: 'UNAUTHORIZED',
+    });
   });
 
   it('rejects everyone when called with no roles', () => {
@@ -51,18 +57,16 @@ describe('authorize', () => {
 
     // Fails closed. An empty role list is almost certainly a mistake, and
     // defaulting to "allow" would silently open an endpoint.
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 403 })
-    );
+    expect(errorFrom(next)).toBeInstanceOf(ForbiddenError);
+    expect(errorFrom(next)).toMatchObject({ status: 403, error: 'FORBIDDEN' });
   });
 
   it('is case sensitive on role names', () => {
     const next = vi.fn();
     authorize('admin')({ user: { id: 1, role: 'Admin' } }, mockRes(), next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 403 })
-    );
+    expect(errorFrom(next)).toBeInstanceOf(ForbiddenError);
+    expect(errorFrom(next)).toMatchObject({ status: 403 });
   });
 
   it('returns a fresh middleware each call, with no shared state', () => {
@@ -76,8 +80,7 @@ describe('authorize', () => {
     customerOnly({ user: { role: 'admin' } }, mockRes(), next2);
 
     expect(next1).toHaveBeenCalledWith();
-    expect(next2).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 403 })
-    );
+    expect(errorFrom(next2)).toBeInstanceOf(ForbiddenError);
+    expect(errorFrom(next2)).toMatchObject({ status: 403 });
   });
 });

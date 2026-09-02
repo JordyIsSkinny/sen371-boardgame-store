@@ -1,14 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { verifyAccessToken } from '../services/token.service.js';
 
-/**
- * Error shape follows System Plan 8.3: { status, error, message, details? }.
- * Swap this for A's error classes once they land — the call sites below
- * should be the only thing that changes.
- */
-function authError(status, error, message) {
-  return { status, error, message };
-}
+import AppError from '../errors/app-error.js';
+import UnauthorizedError from '../errors/unauthorized-error.js';
 
 const BEARER = 'Bearer ';
 
@@ -29,17 +23,13 @@ export function authenticate(req, res, next) {
   const header = req.headers.authorization;
 
   if (!header || !header.startsWith(BEARER)) {
-    return next(
-      authError(401, 'UNAUTHORIZED', 'Authentication required.')
-    );
+    return next(new UnauthorizedError('Authentication required.'));
   }
 
   const token = header.slice(BEARER.length).trim();
 
   if (!token) {
-    return next(
-      authError(401, 'UNAUTHORIZED', 'Authentication required.')
-    );
+    return next(new UnauthorizedError('Authentication required.'));
   }
 
   try {
@@ -59,16 +49,15 @@ export function authenticate(req, res, next) {
     if (err instanceof jwt.TokenExpiredError) {
       // Distinct code so the client can attempt a silent refresh instead of
       // dropping the user back to the login screen.
+      // AppError directly, since UnauthorizedError fixes the code to UNAUTHORIZED
       return next(
-        authError(401, 'TOKEN_EXPIRED', 'Access token has expired.')
+        new AppError(401, 'TOKEN_EXPIRED', 'Access token has expired.')
       );
     }
 
     // Malformed, wrong signature, or an unaccepted algorithm. Deliberately
     // one generic message — telling a caller which of those it was only
     // helps someone probing the endpoint.
-    return next(
-      authError(401, 'UNAUTHORIZED', 'Invalid access token.')
-    );
+    return next(new UnauthorizedError('Invalid access token.'));
   }
 }

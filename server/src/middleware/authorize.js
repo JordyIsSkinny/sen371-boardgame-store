@@ -1,6 +1,5 @@
-function authError(status, error, message) {
-  return { status, error, message };
-}
+import UnauthorizedError from '../errors/unauthorized-error.js';
+import ForbiddenError from '../errors/forbidden-error.js';
 
 /**
  * Role gate. Always runs after authenticate, never instead of it.
@@ -18,9 +17,7 @@ export function authorize(...allowedRoles) {
       // authenticate was not applied ahead of this middleware — a wiring
       // mistake rather than a client error, but 401 is still the honest
       // answer since no identity was established.
-      return next(
-        authError(401, 'UNAUTHORIZED', 'Authentication required.')
-      );
+      return next(new UnauthorizedError('Authentication required.'));
     }
 
     // Fails closed on an empty role list. authorize() with no arguments is
@@ -28,11 +25,7 @@ export function authorize(...allowedRoles) {
     // open an endpoint that was meant to be restricted.
     if (!allowedRoles.includes(req.user.role)) {
       return next(
-        authError(
-          403,
-          'FORBIDDEN',
-          'You do not have permission to perform this action.'
-        )
+        new ForbiddenError('You do not have permission to perform this action.')
       );
     }
 
