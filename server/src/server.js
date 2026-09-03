@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createApp } from "./app.js";
 import { config } from "./config/index.js";
 import { prisma } from "./lib/prismaClient.js";
