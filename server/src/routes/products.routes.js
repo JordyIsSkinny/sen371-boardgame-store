@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/authenticate.stub.js";
-import { authorize } from "../middleware/authorize.stub.js";
+import { authenticate } from "../middleware/authenticate.js";
+import { authorize } from "../middleware/authorize.js";
 import {
   getAllProducts,
   getProductById,
@@ -15,7 +15,6 @@ const router = Router();
 router.get("/", async (req, res, next) => {
   try {
     const { playerCount, categoryId, maxPlayTime, sortBy, sortDir, page, pageSize } = req.query;
-
     const hasFilters = playerCount || categoryId || maxPlayTime || sortBy || sortDir || page || pageSize;
 
     if (hasFilters) {
