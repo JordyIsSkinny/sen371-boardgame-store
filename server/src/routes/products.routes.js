@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/authenticate.js";
-import { authorize } from "../middleware/authorize.js";
+import { authenticate } from "../middleware/authenticate.stub.js";
+import { authorize } from "../middleware/authorize.stub.js";
 import {
   getAllProducts,
   getProductById,

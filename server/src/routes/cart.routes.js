@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/authenticate.js";
-import { authorize } from "../middleware/authorize.js";
+import { authenticate } from "../middleware/authenticate.stub.js";
+import { authorize } from "../middleware/authorize.stub.js";
 import * as cartController from "../controllers/cart.controller.js";
 
 // Endpoint ownership (Milestone 2, Section 2): B owns all four cart routes.

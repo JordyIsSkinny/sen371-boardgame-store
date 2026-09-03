@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/authenticate.js';
+import { authenticate } from '../middleware/authenticate.stub.js';
 import ForbiddenError from '../errors/forbidden-error.js';
 import { createOrder, getOrdersByUser, getOrderById } from '../repositories/order.repository.js';
 
