@@ -1,4 +1,6 @@
-import { Router } from 'express';
+import { Router } from "express";
+import { authenticate } from "../middleware/authenticate.stub.js";
+import { authorize } from "../middleware/authorize.stub.js";
 import {
   getAllProducts,
   getProductById,
@@ -6,22 +8,20 @@ import {
   updateProduct,
   deleteProduct,
   filterProducts,
-} from '../repositories/product.repository.js';
+} from "../repositories/product.repository.js";
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
-    const { playerCount, categoryId, mechanicId, maxPlayTime, sortBy, sortDir, page, pageSize } = req.query;
+    const { playerCount, categoryId, maxPlayTime, sortBy, sortDir, page, pageSize } = req.query;
 
-    const hasFilters =
-      playerCount || categoryId || mechanicId || maxPlayTime || sortBy || sortDir || page || pageSize;
+    const hasFilters = playerCount || categoryId || maxPlayTime || sortBy || sortDir || page || pageSize;
 
     if (hasFilters) {
       const result = await filterProducts({
         playerCount,
         categoryId,
-        mechanicId,
         maxPlayTime,
         sortBy,
         sortDir,
@@ -34,46 +34,46 @@ router.get('/', async (req, res) => {
     const products = await getAllProducts();
     res.json({ data: products });
   } catch (err) {
-    res.status(500).json({ error: { code: 'SERVER_ERROR', message: err.message } });
+    next(err);
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   try {
     const product = await getProductById(Number(req.params.id));
     if (!product) {
-      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Product not found' } });
+      return res.status(404).json({ error: "NOT_FOUND", message: "Product not found" });
     }
     res.json({ data: product });
   } catch (err) {
-    res.status(500).json({ error: { code: 'SERVER_ERROR', message: err.message } });
+    next(err);
   }
 });
 
-router.post('/', async (req, res) => {
+router.post("/", authenticate, authorize("admin"), async (req, res, next) => {
   try {
     const product = await createProduct(req.body);
     res.status(201).json({ data: product });
   } catch (err) {
-    res.status(400).json({ error: { code: 'CREATE_FAILED', message: err.message } });
+    next(err);
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put("/:id", authenticate, authorize("admin"), async (req, res, next) => {
   try {
     const product = await updateProduct(Number(req.params.id), req.body);
     res.json({ data: product });
   } catch (err) {
-    res.status(400).json({ error: { code: 'UPDATE_FAILED', message: err.message } });
+    next(err);
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", authenticate, authorize("admin"), async (req, res, next) => {
   try {
     const product = await deleteProduct(Number(req.params.id));
     res.json({ data: product });
   } catch (err) {
-    res.status(400).json({ error: { code: 'DELETE_FAILED', message: err.message } });
+    next(err);
   }
 });
 

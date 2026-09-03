@@ -35,7 +35,9 @@ export async function createOrder({ userId, addressId, items }) {
       });
     }
 
-    const shippingFee = 0;
+// TODO: shippingFee hardcoded to 0 for M2. S5 wireframes specify a delivery
+// method selection step with a cost — wire that in for M3/M4.
+const shippingFee = 0;
     const total = subtotal + shippingFee;
 
     const order = await tx.order.create({

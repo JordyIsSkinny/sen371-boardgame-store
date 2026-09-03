@@ -1,37 +1,41 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/authenticate.stub.js';
+import ForbiddenError from '../errors/forbidden-error.js';
 import { createOrder, getOrdersByUser, getOrderById } from '../repositories/order.repository.js';
 
 const router = Router();
 
-router.post('/', async (req, res) => {
+router.post('/', authenticate, async (req, res, next) => {
   try {
-    const { userId, addressId, items } = req.body;
-    const order = await createOrder({ userId, addressId, items });
+    const { addressId, items } = req.body;
+    const order = await createOrder({ userId: req.user.id, addressId, items });
     res.status(201).json({ data: order });
   } catch (err) {
-    res.status(400).json({ error: { code: 'ORDER_FAILED', message: err.message } });
+    next(err);
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', authenticate, async (req, res, next) => {
   try {
-    const userId = Number(req.query.userId);
-    const orders = await getOrdersByUser(userId);
+    const orders = await getOrdersByUser(req.user.id);
     res.json({ data: orders });
   } catch (err) {
-    res.status(500).json({ error: { code: 'SERVER_ERROR', message: err.message } });
+    next(err);
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticate, async (req, res, next) => {
   try {
     const order = await getOrderById(Number(req.params.id));
     if (!order) {
-      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Order not found' } });
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
+    }
+    if (order.userId !== req.user.id) {
+      return next(new ForbiddenError('You do not have access to this order.'));
     }
     res.json({ data: order });
   } catch (err) {
-    res.status(500).json({ error: { code: 'SERVER_ERROR', message: err.message } });
+    next(err);
   }
 });
 
