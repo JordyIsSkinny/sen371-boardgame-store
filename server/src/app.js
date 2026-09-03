@@ -3,7 +3,7 @@ import cors from "cors";
 import { config } from "./config/index.js";
 import routes from "./routes/index.js";
 import { notFound } from "./middleware/notFound.js";
-import { errorHandler } from "./middleware/errorHandler.js";
+import errorHandler from "./middleware/error-handler.js";
 
 // This file is the architecture: it's the middleware chain from Milestone
 // 1's diagram (Figure 2, Section 7) made real. CORS -> body parsing ->
