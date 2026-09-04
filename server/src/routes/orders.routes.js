@@ -1,11 +1,16 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
+import {
+  validate,
+  createOrderSchema,
+  orderIdSchema,
+} from '../middleware/validate.js';
 import ForbiddenError from '../errors/forbidden-error.js';
 import { createOrder, getOrdersByUser, getOrderById } from '../repositories/order.repository.js';
 
 const router = Router();
 
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, validate({ body: createOrderSchema }), async (req, res, next) => {
   try {
     const { addressId, items } = req.body;
     const order = await createOrder({ userId: req.user.id, addressId, items });
@@ -15,7 +20,7 @@ router.post('/', authenticate, async (req, res, next) => {
   }
 });
 
-router.get('/', authenticate, async (req, res, next) => {
+router.get('/:id', authenticate, validate({ params: orderIdSchema }), async (req, res, next) => {
   try {
     const orders = await getOrdersByUser(req.user.id);
     res.json({ data: orders });
