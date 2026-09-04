@@ -86,5 +86,48 @@ export function createAuthService({ userRepository, refreshTokenRepository }) {
     return { user: toPublicUser(user), ...(await issueTokens(user)) };
   }
 
-  return { register, login };
+  async function refresh(presentedToken) {
+    if (!presentedToken) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid refresh token');
+    }
+
+    const record = await refreshTokenRepository.findByHash(hashRefreshToken(presentedToken));
+
+    if (!record) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid refresh token');
+    }
+
+    if (record.revoked_at) {
+      // A revoked token being presented again means it was copied before it
+      // was rotated out — replay or theft. Assume compromise and kill every
+      // session for this user rather than trusting just this one token.
+      await refreshTokenRepository.revokeAllForUser(record.user_id);
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid refresh token');
+    }
+
+    if (record.expires_at < new Date()) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid refresh token');
+    }
+
+    const user = await userRepository.findById(record.user_id);
+    if (!user) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Invalid refresh token');
+    }
+
+    await refreshTokenRepository.revoke(record.id);
+
+    return issueTokens(user);
+  }
+
+  async function logout(presentedToken) {
+    if (!presentedToken) return;
+
+    const record = await refreshTokenRepository.findByHash(hashRefreshToken(presentedToken));
+
+    if (record && !record.revoked_at) {
+      await refreshTokenRepository.revoke(record.id);
+    }
+  }
+
+  return { register, login, refresh, logout };
 }
