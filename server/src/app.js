@@ -4,6 +4,7 @@ import { config } from "./config/index.js";
 import routes from "./routes/index.js";
 import { notFound } from "./middleware/notFound.js";
 import errorHandler from "./middleware/error-handler.js";
+import cookieParser from 'cookie-parser'
 
 // This file is the architecture: it's the middleware chain from Milestone
 // 1's diagram (Figure 2, Section 7) made real. CORS -> body parsing ->
@@ -13,6 +14,7 @@ import errorHandler from "./middleware/error-handler.js";
 
 export function createApp() {
   const app = express();
+  app.use(cookieParser());
 
   app.use(
     cors({
