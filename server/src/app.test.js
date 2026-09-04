@@ -64,7 +64,9 @@ describe('general rate limiting (System Plan 8.4)', () => {
   it('advertises a limit of 100 requests per minute', async () => {
     const res = await request(app).get('/api/v1/health');
 
-    expect(res.headers['ratelimit-limit']).toBe('100');
+    // draft-7 headers combine limit and window into a single policy header
+    // rather than a separate RateLimit-Limit header (draft-6's shape).
+    expect(res.headers['ratelimit-policy']).toBe('100;w=60');
   });
 
   it('returns 429 RATE_LIMIT_EXCEEDED once the general limit is exceeded', async () => {
