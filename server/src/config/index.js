@@ -27,4 +27,11 @@ export const config = {
   },
 };
 
+// System Plan 8.4: the two secrets must differ. If they were the same, a
+// leaked or brute-forced refresh token secret would also mint valid access
+// tokens, collapsing two independent trust boundaries into one.
+if (config.jwt.secret === config.jwt.refreshSecret) {
+  throw new Error("JWT_SECRET and REFRESH_TOKEN_SECRET must be different values");
+}
+
 export const isProduction = config.env === "production";
