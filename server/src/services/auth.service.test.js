@@ -22,6 +22,7 @@ beforeEach(async () => {
 
   userRepository = {
     findByEmail: vi.fn().mockResolvedValue(null),
+    findById: vi.fn().mockResolvedValue(null),
     create: vi.fn().mockImplementation(async (data) => ({
       id: 1,
       first_name: data.first_name,
@@ -33,6 +34,9 @@ beforeEach(async () => {
 
   refreshTokenRepository = {
     create: vi.fn().mockResolvedValue({ id: 1 }),
+    findByHash: vi.fn().mockResolvedValue(null),
+    revoke: vi.fn().mockResolvedValue(undefined),
+    revokeAllForUser: vi.fn().mockResolvedValue(0),
   };
 
   authService = createAuthService({ userRepository, refreshTokenRepository });
@@ -186,5 +190,147 @@ describe('login', () => {
       .catch(() => {});
 
     expect(refreshTokenRepository.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('refresh', () => {
+  const RAW_TOKEN = 'a'.repeat(80);
+  const STORED_USER = {
+    id: 1,
+    first_name: 'Jane',
+    last_name: 'Smith',
+    email: VALID.email,
+    role: 'customer',
+  };
+
+  function liveRecord(overrides = {}) {
+    return {
+      id: 5,
+      user_id: 1,
+      token_hash: 'irrelevant',
+      expires_at: new Date(Date.now() + 60_000),
+      revoked_at: null,
+      ...overrides,
+    };
+  }
+
+  beforeEach(() => {
+    userRepository.findById.mockResolvedValue(STORED_USER);
+  });
+
+  it('rejects when no token is presented', async () => {
+    await expect(authService.refresh(undefined)).rejects.toMatchObject({
+      status: 401,
+      error: 'UNAUTHORIZED',
+    });
+
+    expect(refreshTokenRepository.findByHash).not.toHaveBeenCalled();
+  });
+
+  it('rejects a token with no matching stored hash', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue(null);
+
+    await expect(authService.refresh(RAW_TOKEN)).rejects.toMatchObject({
+      status: 401,
+      error: 'UNAUTHORIZED',
+    });
+  });
+
+  it('rejects an expired token', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue(
+      liveRecord({ expires_at: new Date(Date.now() - 1000) })
+    );
+
+    await expect(authService.refresh(RAW_TOKEN)).rejects.toMatchObject({
+      status: 401,
+      error: 'UNAUTHORIZED',
+    });
+
+    expect(refreshTokenRepository.revoke).not.toHaveBeenCalled();
+  });
+
+  it('revokes the old token and issues a new pair for a valid token', async () => {
+    const record = liveRecord();
+    refreshTokenRepository.findByHash.mockResolvedValue(record);
+
+    const result = await authService.refresh(RAW_TOKEN);
+
+    expect(refreshTokenRepository.revoke).toHaveBeenCalledWith(record.id);
+    expect(typeof result.accessToken).toBe('string');
+    expect(result.refreshToken).toMatch(/^[0-9a-f]{80}$/);
+    expect(refreshTokenRepository.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a revoked token as reuse and revokes every token for that user', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue(
+      liveRecord({ revoked_at: new Date() })
+    );
+
+    await expect(authService.refresh(RAW_TOKEN)).rejects.toMatchObject({
+      status: 401,
+      error: 'UNAUTHORIZED',
+    });
+
+    expect(refreshTokenRepository.revokeAllForUser).toHaveBeenCalledWith(1);
+  });
+
+  it('does not issue new tokens when reuse is detected', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue(
+      liveRecord({ revoked_at: new Date() })
+    );
+
+    await authService.refresh(RAW_TOKEN).catch(() => {});
+
+    expect(refreshTokenRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects when the token is live but its user no longer exists', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue(liveRecord());
+    userRepository.findById.mockResolvedValue(null);
+
+    await expect(authService.refresh(RAW_TOKEN)).rejects.toMatchObject({
+      status: 401,
+      error: 'UNAUTHORIZED',
+    });
+
+    expect(refreshTokenRepository.revoke).not.toHaveBeenCalled();
+  });
+});
+
+describe('logout', () => {
+  it('revokes the presented refresh token', async () => {
+    const record = { id: 5, user_id: 1, revoked_at: null };
+    refreshTokenRepository.findByHash.mockResolvedValue(record);
+
+    await authService.logout('a'.repeat(80));
+
+    expect(refreshTokenRepository.revoke).toHaveBeenCalledWith(record.id);
+  });
+
+  it('is a no-op when no token is presented', async () => {
+    await authService.logout(undefined);
+
+    expect(refreshTokenRepository.findByHash).not.toHaveBeenCalled();
+    expect(refreshTokenRepository.revoke).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op when the token matches nothing stored', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue(null);
+
+    await authService.logout('a'.repeat(80));
+
+    expect(refreshTokenRepository.revoke).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op when the token is already revoked', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue({
+      id: 5,
+      user_id: 1,
+      revoked_at: new Date(),
+    });
+
+    await authService.logout('a'.repeat(80));
+
+    expect(refreshTokenRepository.revoke).not.toHaveBeenCalled();
   });
 });
