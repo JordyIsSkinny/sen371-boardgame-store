@@ -20,7 +20,7 @@ router.post('/', authenticate, validate({ body: createOrderSchema }), async (req
   }
 });
 
-router.get('/:id', authenticate, validate({ params: orderIdSchema }), async (req, res, next) => {
+router.get('/', authenticate, async (req, res, next) => {
   try {
     const orders = await getOrdersByUser(req.user.id);
     res.json({ data: orders });
@@ -29,7 +29,7 @@ router.get('/:id', authenticate, validate({ params: orderIdSchema }), async (req
   }
 });
 
-router.get('/:id', authenticate, async (req, res, next) => {
+router.get('/:id', authenticate, validate({ params: orderIdSchema }), async (req, res, next) => {
   try {
     const order = await getOrderById(Number(req.params.id));
     if (!order) {

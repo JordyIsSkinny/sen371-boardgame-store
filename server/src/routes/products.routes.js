@@ -8,9 +8,18 @@ import {
   updateProductSchema,
   productQuerySchema,
 } from "../middleware/validate.js";
+
+import {
+  getAllProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  filterProducts,
+} from "../repositories/product.repository.js";
 const router = Router();
 
-router.get("/:id", validate({ params: productIdSchema }), async (req, res, next) => {
+router.get("/", validate({ query: productQuerySchema }), async (req, res, next) => {
   try {
     const { playerCount, categoryId, maxPlayTime, sortBy, sortDir, page, pageSize } = req.query;
     const hasFilters = playerCount || categoryId || maxPlayTime || sortBy || sortDir || page || pageSize;
@@ -35,7 +44,7 @@ router.get("/:id", validate({ params: productIdSchema }), async (req, res, next)
   }
 });
 
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", validate({ params: productIdSchema }), async (req, res, next) => {
   try {
     const product = await getProductById(Number(req.params.id));
     if (!product) {
