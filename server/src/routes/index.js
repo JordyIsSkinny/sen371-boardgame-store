@@ -7,6 +7,7 @@ import {
   productReviewRouter,
   reviewRouter,
 } from "./review.routes.js";
+import authRoutes from "./auth.routes.js";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ router.use("/cart", cartRoutes);
 router.use("/products", productRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/orders", orderRoutes);
-// D: router.use("/auth", authRoutes);
+router.use("/auth", authRoutes);
 router.use("/products/:productId/reviews", productReviewRouter);
 router.use("/reviews", reviewRouter);
 
