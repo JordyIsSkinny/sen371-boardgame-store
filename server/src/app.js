@@ -6,13 +6,15 @@ import { config } from "./config/index.js";
 import routes from "./routes/index.js";
 import { notFound } from "./middleware/notFound.js";
 import errorHandler from "./middleware/error-handler.js";
+import cookieParser from "cookie-parser";
 
 // This file is the architecture: it's the middleware chain from Milestone
 // 1's diagram (Figure 2, Section 7) made real. Helmet -> CORS -> general
-// rate limit -> body parsing -> routes (which apply auth/RBAC/validation
-// and their own stricter rate limits per-router as needed) -> notFound ->
-// errorHandler. Nothing else should register middleware outside this file;
-// that's what keeps the chain legible in one place.
+// rate limit -> cookie parsing -> body parsing -> routes (which apply
+// auth/RBAC/validation and their own stricter rate limits per-router as
+// needed) -> notFound -> errorHandler. Nothing else should register
+// middleware outside this file; that's what keeps the chain legible in one
+// place.
 
 export function createApp() {
   const app = express();
@@ -44,6 +46,9 @@ export function createApp() {
       },
     }),
   );
+
+  // Must come before any handler reads req.cookies, e.g. /auth/refresh.
+  app.use(cookieParser());
 
   // System Plan 8.4: JSON body limit of 100kb. Matches express's own
   // default, made explicit so it stays true if that default ever changes.
