@@ -1,11 +1,4 @@
 import ValidationError from "../errors/validation-error.js";
-import {
-  validate,
-  productIdSchema,
-  createProductSchema,
-  updateProductSchema,
-  productQuerySchema,
-} from "../middleware/validate.js";
 
 export function validate(schema) {
   return (req, res, next) => {
