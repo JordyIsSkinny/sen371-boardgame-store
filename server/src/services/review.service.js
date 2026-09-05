@@ -3,7 +3,9 @@ import {
   getReviewById,
   createReview,
   updateReview,
+  updateReviewAsAdmin,
   deleteReview,
+  deleteReviewAsAdmin,
   hasPurchasedProduct,
 } from '../repositories/review.repository.js';
 
@@ -48,14 +50,15 @@ export async function submitReview(userId, productId, rating, comment) {
     comment,
   });
 }
-export async function editReview(reviewId, userId, data) {
+
+export async function editReview(reviewId, userId, role, data) {
   const review = await getReviewById(reviewId);
 
   if (!review) {
     throw new NotFoundError('Review not found.');
   }
 
-  if (review.userId !== userId) {
+  if (review.userId !== userId && role !== 'admin') {
     throw new ForbiddenError(
       'You can only update your own reviews.'
     );
@@ -73,20 +76,28 @@ export async function editReview(reviewId, userId, data) {
     }
   }
 
+  if (role === 'admin' && review.userId !== userId) {
+    return updateReviewAsAdmin(reviewId, data);
+  }
+
   return updateReview(reviewId, userId, data);
 }
 
-export async function removeReview(reviewId, userId) {
+export async function removeReview(reviewId, userId, role) {
   const review = await getReviewById(reviewId);
 
   if (!review) {
     throw new NotFoundError('Review not found.');
   }
 
-  if (review.userId !== userId) {
+  if (review.userId !== userId && role !== 'admin') {
     throw new ForbiddenError(
       'You can only delete your own reviews.'
     );
+  }
+
+  if (role === 'admin' && review.userId !== userId) {
+    return deleteReviewAsAdmin(reviewId);
   }
 
   return deleteReview(reviewId, userId);

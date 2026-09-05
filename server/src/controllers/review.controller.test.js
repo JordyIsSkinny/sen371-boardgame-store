@@ -137,6 +137,7 @@ describe('review.controller', () => {
       };
 
       req.user.id = 5;
+      req.user.role = 'customer';
       req.params.id = '1';
       req.body = {
         rating: 4,
@@ -152,6 +153,7 @@ describe('review.controller', () => {
         .toHaveBeenCalledWith(
           1,
           5,
+          'customer',
           {
             rating: 4,
             comment: 'Updated review.',
@@ -167,6 +169,7 @@ describe('review.controller', () => {
       const error = new Error('Review update failed');
 
       req.user.id = 5;
+      req.user.role = 'customer';
       req.params.id = '1';
       req.body = {
         rating: 4,
@@ -185,6 +188,7 @@ describe('review.controller', () => {
   describe('deleteReview', () => {
     it('deletes the authenticated user’s review', async () => {
       req.user.id = 5;
+      req.user.role = 'customer';
       req.params.id = '1';
 
       vi.spyOn(reviewService, 'removeReview')
@@ -193,7 +197,7 @@ describe('review.controller', () => {
       await deleteReview(req, res, next);
 
       expect(reviewService.removeReview)
-        .toHaveBeenCalledWith(1, 5);
+        .toHaveBeenCalledWith(1, 5, 'customer');
 
       expect(res.status).toHaveBeenCalledWith(204);
       expect(res.send).toHaveBeenCalled();
@@ -204,6 +208,7 @@ describe('review.controller', () => {
       const error = new Error('Review deletion failed');
 
       req.user.id = 5;
+      req.user.role = 'customer';
       req.params.id = '1';
 
       vi.spyOn(reviewService, 'removeReview')

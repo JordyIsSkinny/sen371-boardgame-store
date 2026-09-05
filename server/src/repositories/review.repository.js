@@ -62,7 +62,14 @@ export async function updateReview(id, userId, data) {
     data,
   });
 }
-
+export async function updateReviewAsAdmin(id, data) {
+  return prisma.review.update({
+    where: {
+      id,
+    },
+    data,
+  });
+}
 export async function deleteReview(id, userId) {
   return prisma.review.delete({
     where: {
@@ -71,14 +78,19 @@ export async function deleteReview(id, userId) {
     },
   });
 }
+export async function deleteReviewAsAdmin(id) {
+  return prisma.review.delete({
+    where: {
+      id,
+    },
+  });
+}
 
 export async function hasPurchasedProduct(userId, productId) {
   const order = await prisma.order.findFirst({
     where: {
       userId,
-      status: {
-        in: ['paid', 'shipped', 'delivered'],
-      },
+      status: 'delivered',
       items: {
         some: {
           productId,

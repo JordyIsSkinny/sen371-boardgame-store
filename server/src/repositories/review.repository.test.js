@@ -66,7 +66,7 @@ beforeAll(async () => {
     data: {
       userId: testUser.id,
       addressId: testAddress.id,
-      status: 'paid',
+      status: 'delivered',
       subtotal: 500.0,
       total: 500.0,
       items: {
@@ -87,7 +87,7 @@ beforeAll(async () => {
       },
     },
   });
-});
+}, 30000);
 
 afterAll(async () => {
   if (testUser) {
@@ -136,7 +136,7 @@ afterAll(async () => {
 });
 
 describe('hasPurchasedProduct', () => {
-  it('returns true when the user has a paid order containing the product', async () => {
+  it('returns true when the user has a delivered order containing the product', async () => {
     const result = await hasPurchasedProduct(
       testUser.id,
       testProduct.id

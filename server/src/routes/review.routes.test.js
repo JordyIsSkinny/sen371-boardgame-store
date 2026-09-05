@@ -14,13 +14,14 @@ let purchasedOrder;
 let testReview;
 let accessToken;
 let otherAccessToken;
+let adminAccessToken;
 
 beforeAll(async () => {
-  process.env.DATABASE_URL ??=
-    'postgresql://test:test@localhost:5432/test';
-  process.env.JWT_SECRET ??= 'test-access-secret';
-  process.env.REFRESH_TOKEN_SECRET ??= 'test-refresh-secret';
-  process.env.CLIENT_ORIGIN ??= 'http://localhost:5173';
+ process.env.DATABASE_URL =
+  'postgresql://postgres:Spongebob@23@localhost:5432/sen371_test';
+process.env.JWT_SECRET = 'test-jwt-secret';
+process.env.REFRESH_TOKEN_SECRET = 'test-refresh-secret';
+process.env.CLIENT_ORIGIN = 'http://localhost:5173';
 
   const [
     { createApp },
@@ -79,6 +80,12 @@ beforeAll(async () => {
     email: otherUser.email,
   });
 
+  adminAccessToken = signAccessToken({
+  id: otherUser.id,
+  role: 'admin',
+  email: otherUser.email,
+});
+
   testAddress = await prisma.address.create({
     data: {
       userId: testUser.id,
@@ -109,7 +116,7 @@ beforeAll(async () => {
     data: {
       userId: testUser.id,
       addressId: testAddress.id,
-      status: 'paid',
+      status: 'delivered',
       subtotal: 450.0,
       total: 450.0,
       items: {
@@ -262,7 +269,7 @@ describe('Review routes', () => {
         data: {
           userId: testUser.id,
           addressId: testAddress.id,
-          status: 'paid',
+          status: 'delivered',
           subtotal: 300.0,
           total: 300.0,
           items: {
@@ -351,6 +358,24 @@ describe('Review routes', () => {
       });
     });
 
+    it('allows an admin to update another user’s review', async () => {
+  const response = await request(app)
+    .put(`/api/v1/reviews/${testReview.id}`)
+    .set('Authorization', `Bearer ${adminAccessToken}`)
+    .send({
+      rating: 3,
+      comment: 'Updated by admin.',
+    });
+
+  expect(response.status).toBe(200);
+  expect(response.body).toMatchObject({
+    id: testReview.id,
+    userId: testUser.id,
+    rating: 3,
+    comment: 'Updated by admin.',
+   });
+ });
+
     it('rejects another user from updating the review', async () => {
       const response = await request(app)
         .put(`/api/v1/reviews/${testReview.id}`)
@@ -365,6 +390,30 @@ describe('Review routes', () => {
   });
 
   describe('DELETE /api/v1/reviews/:id', () => {
+    it('allows an admin to delete another user’s review', async () => {
+  const adminReview = await prisma.review.create({
+    data: {
+      userId: otherUser.id,
+      productId: testProduct.id,
+      rating: 2,
+      comment: 'Review for admin deletion test.',
+    },
+  });
+
+  const response = await request(app)
+    .delete(`/api/v1/reviews/${adminReview.id}`)
+    .set('Authorization', `Bearer ${adminAccessToken}`);
+
+  expect(response.status).toBe(204);
+
+  const deletedReview = await prisma.review.findUnique({
+    where: {
+      id: adminReview.id,
+    },
+  });
+
+  expect(deletedReview).toBeNull();
+});
     it('rejects another user from deleting the review', async () => {
       const response = await request(app)
         .delete(`/api/v1/reviews/${testReview.id}`)

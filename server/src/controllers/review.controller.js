@@ -39,12 +39,14 @@ export async function createReview(req, res, next) {
 export async function updateReview(req, res, next) {
   try {
     const userId = req.user.id;
+    const role = req.user.role;
     const reviewId = Number(req.params.id);
     const { rating, comment } = req.body;
 
     const review = await editReview(
       reviewId,
       userId,
+      role,
       {
         rating,
         comment,
@@ -60,9 +62,10 @@ export async function updateReview(req, res, next) {
 export async function deleteReview(req, res, next) {
   try {
     const userId = req.user.id;
+    const role = req.user.role;
     const reviewId = Number(req.params.id);
 
-    await removeReview(reviewId, userId);
+    await removeReview(reviewId, userId, role);
 
     res.status(204).send();
   } catch (error) {
