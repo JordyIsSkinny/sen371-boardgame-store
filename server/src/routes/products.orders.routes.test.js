@@ -165,7 +165,7 @@ describe("Order routes", () => {
     expect(orderRepository.getOrderById).not.toHaveBeenCalled();
   });
 
-  it("GET /api/v1/orders/:id rejects access to another user's order", async () => {
+  it("GET /api/v1/orders/:id hides another user's order behind a 404", async () => {
     orderRepository.getOrderById.mockResolvedValue({
       id: 10,
       userId: 999,
@@ -175,9 +175,10 @@ describe("Order routes", () => {
       .get("/api/v1/orders/10")
       .set("Authorization", authHeader());
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
     expect(res.body).toMatchObject({
-      error: "FORBIDDEN",
+      status: 404,
+      error: "NOT_FOUND",
     });
   });
 });
