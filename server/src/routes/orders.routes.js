@@ -5,7 +5,7 @@ import {
   createOrderSchema,
   orderIdSchema,
 } from '../middleware/validate.js';
-import ForbiddenError from '../errors/forbidden-error.js';
+import { requireOwnershipOrAdmin } from '../middleware/require-ownership.js';
 import { createOrder, getOrdersByUser, getOrderById } from '../repositories/order.repository.js';
 
 const router = Router();
@@ -29,19 +29,22 @@ router.get('/', authenticate, async (req, res, next) => {
   }
 });
 
-router.get('/:id', authenticate, validate({ params: orderIdSchema }), async (req, res, next) => {
-  try {
-    const order = await getOrderById(Number(req.params.id));
-    if (!order) {
-      return res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
+router.get(
+  '/:id',
+  authenticate,
+  validate({ params: orderIdSchema }),
+  requireOwnershipOrAdmin({
+    load: (req) => getOrderById(Number(req.params.id)),
+    resourceName: 'Order',
+    attachAs: 'order',
+  }),
+  (req, res, next) => {
+    try {
+      res.json({ data: req.order });
+    } catch (err) {
+      next(err);
     }
-    if (order.userId !== req.user.id) {
-      return next(new ForbiddenError('You do not have access to this order.'));
-    }
-    res.json({ data: order });
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 export default router;
