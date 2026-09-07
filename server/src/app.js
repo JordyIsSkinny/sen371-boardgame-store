@@ -6,6 +6,7 @@ import { config } from "./config/index.js";
 import routes from "./routes/index.js";
 import { notFound } from "./middleware/notFound.js";
 import errorHandler from "./middleware/error-handler.js";
+import { serializeResponse } from "./middleware/serialize-response.js";
 import cookieParser from "cookie-parser";
 
 // This file is the architecture: it's the middleware chain from Milestone
@@ -54,6 +55,8 @@ export function createApp() {
   // default, made explicit so it stays true if that default ever changes.
   app.use(express.json({ limit: "100kb" }));
 
+  app.use(serializeResponse);
+  
   app.use("/api/v1", routes);
 
   // Must come after all route mounts: catches anything nothing above matched.
