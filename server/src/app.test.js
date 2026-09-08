@@ -15,10 +15,16 @@ beforeAll(async () => {
   process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';
   process.env.JWT_SECRET ??= 'test-access-secret';
   process.env.REFRESH_TOKEN_SECRET ??= 'test-refresh-secret';
+  // Set unconditionally, not ??=: other test files set CLIENT_ORIGIN too,
+  // just to a single origin so their app boots, and vitest can run test
+  // files sequentially within one worker, so ??= here would silently lose
+  // to whichever of those ran first. This file is the one that actually
+  // asserts against the value, so it needs to win.
+  //
   // Two origins on purpose: this is what exercises the allowlist. A
   // developer running the client locally against the deployed API, and the
   // deployed GitHub Pages site itself, both need to work at once in M4.
-  process.env.CLIENT_ORIGIN ??=
+  process.env.CLIENT_ORIGIN =
     'http://localhost:5173,https://jordyisskinny.github.io';
 
   const [{ createApp }, configModule, supertestModule] = await Promise.all([
