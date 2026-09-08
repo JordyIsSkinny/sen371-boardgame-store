@@ -1,48 +1,39 @@
-import { Router } from 'express';
-import { authenticate } from '../middleware/authenticate.js';
-import { createPayment, getPaymentByOrderId } from '../repositories/payment.repository.js';
-import { getOrderById } from '../repositories/order.repository.js';
-import ForbiddenError from '../errors/forbidden-error.js';
+import { Router } from "express";
+import { authenticate } from "../middleware/authenticate.js";
+import { validate, createPaymentSchema, paymentOrderIdSchema } from "../middleware/validate.js";
+import { requireOwnershipOrAdmin } from "../middleware/require-ownership.js";
+import { getOrderById } from "../repositories/order.repository.js";
+import * as paymentController from "../controllers/payment.controller.js";
 
 const router = Router();
 
-router.post('/', authenticate, async (req, res, next) => {
-  try {
-    const { orderId, method } = req.body;
+// requireOwnershipOrAdmin also covers POST: the order to pay for is named in
+// the body rather than the URL, but the same 404-not-403 enumeration rule
+// applies (security-addendum.md "Payments" section / section 2), so it
+// reuses the same middleware orders.routes.js already established for
+// GET /orders/:id.
+router.post(
+  "/",
+  authenticate,
+  validate({ body: createPaymentSchema }),
+  requireOwnershipOrAdmin({
+    load: (req) => getOrderById(Number(req.body.orderId)),
+    resourceName: "Order",
+    attachAs: "order",
+  }),
+  paymentController.createPayment,
+);
 
-    const order = await getOrderById(Number(orderId));
-    if (!order) {
-      return res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
-    }
-    if (order.userId !== req.user.id) {
-      return next(new ForbiddenError('You do not have access to this order.'));
-    }
-
-    const payment = await createPayment({ orderId: Number(orderId), method });
-    res.status(201).json({ data: payment });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get('/:orderId', authenticate, async (req, res, next) => {
-  try {
-    const order = await getOrderById(Number(req.params.orderId));
-    if (!order) {
-      return res.status(404).json({ error: 'NOT_FOUND', message: 'Order not found' });
-    }
-    if (order.userId !== req.user.id) {
-      return next(new ForbiddenError('You do not have access to this order.'));
-    }
-
-    const payment = await getPaymentByOrderId(Number(req.params.orderId));
-    if (!payment) {
-      return res.status(404).json({ error: 'NOT_FOUND', message: 'Payment not found for this order' });
-    }
-    res.json({ data: payment });
-  } catch (err) {
-    next(err);
-  }
-});
+router.get(
+  "/:orderId",
+  authenticate,
+  validate({ params: paymentOrderIdSchema }),
+  requireOwnershipOrAdmin({
+    load: (req) => getOrderById(Number(req.params.orderId)),
+    resourceName: "Order",
+    attachAs: "order",
+  }),
+  paymentController.getPayment,
+);
 
 export default router;

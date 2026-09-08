@@ -25,7 +25,9 @@ export async function getAllUsers() {
 }
 
 export async function updateUser(id, data) {
-  const allowedFields = ['firstName', 'lastName'];
+  // security-addendum.md "Users": PUT /users/me may set first_name/last_name/email,
+  // never role_id. email was missing from this whitelist.
+  const allowedFields = ['firstName', 'lastName', 'email'];
   const safeData = {};
   for (const key of allowedFields) {
     if (data[key] !== undefined) safeData[key] = data[key];
