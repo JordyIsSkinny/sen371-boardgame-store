@@ -17,8 +17,6 @@ let otherAccessToken;
 let adminAccessToken;
 
 beforeAll(async () => {
- process.env.DATABASE_URL =
-  'postgresql://postgres:Spongebob@23@localhost:5432/sen371_test';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.REFRESH_TOKEN_SECRET = 'test-refresh-secret';
 process.env.CLIENT_ORIGIN = 'http://localhost:5173';
