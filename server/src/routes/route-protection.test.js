@@ -60,6 +60,11 @@ const POLICY = [
   { method: 'post', path: '/products/:id/reviews', requires: AUTH },
   { method: 'put', path: '/reviews/:id', requires: AUTH },
   { method: 'delete', path: '/reviews/:id', requires: AUTH },
+
+  // Health check — reachable without a token is the only sane default for
+  // an uptime probe. Team-confirmed (Miles agreed on PR #83), not defaulted
+  // into silently.
+  { method: 'get', path: '/health', requires: PUBLIC },
 ];
 
 /** Middleware function names, as they appear on the Express layer stack. */
