@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
+import { validate, createPaymentSchema, orderIdParamSchema } from '../middleware/validate.js';
 import { createPayment, getPaymentByOrderId } from '../repositories/payment.repository.js';
 import { getOrderById } from '../repositories/order.repository.js';
 import ForbiddenError from '../errors/forbidden-error.js';
 
 const router = Router();
 
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, validate({ body: createPaymentSchema }), async (req, res, next) => {
   try {
     const { orderId, method } = req.body;
 
@@ -25,7 +26,7 @@ router.post('/', authenticate, async (req, res, next) => {
   }
 });
 
-router.get('/:orderId', authenticate, async (req, res, next) => {
+router.get('/:orderId', authenticate, validate({ params: orderIdParamSchema }), async (req, res, next) => {
   try {
     const order = await getOrderById(Number(req.params.orderId));
     if (!order) {

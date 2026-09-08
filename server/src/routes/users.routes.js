@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
 import { authorize } from '../middleware/authorize.js';
+import { validate, updateUserSchema, userIdSchema } from '../middleware/validate.js';
 import { getUserById, updateUser, getAllUsers } from '../repositories/user-profile.repository.js';
 
 const router = Router();
@@ -17,7 +18,7 @@ router.get('/me', authenticate, async (req, res, next) => {
   }
 });
 
-router.put('/me', authenticate, async (req, res, next) => {
+router.put('/me', authenticate, validate({ body: updateUserSchema }), async (req, res, next) => {
   try {
     const user = await updateUser(req.user.id, req.body);
     res.json({ data: user });
@@ -35,7 +36,7 @@ router.get('/', authenticate, authorize('admin'), async (req, res, next) => {
   }
 });
 
-router.get('/:id', authenticate, authorize('admin'), async (req, res, next) => {
+router.get('/:id', authenticate, authorize('admin'), validate({ params: userIdSchema }), async (req, res, next) => {
   try {
     const user = await getUserById(Number(req.params.id));
     if (!user) {
