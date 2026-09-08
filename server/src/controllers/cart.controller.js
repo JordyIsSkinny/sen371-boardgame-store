@@ -5,14 +5,14 @@ import * as cartService from "../services/cart.service.js";
 // for the other three members to copy this file's structure for their
 // own endpoints without also copying cart-specific rules.
 //
-// Response shape: bare, resource-named object (e.g. { cart: {...} }),
-// matching D's published auth contracts ({ user: {...}, accessToken })
-// rather than a generic { data: ... } envelope.
+// Response shape: { data: ... }, per the team's #51 decision to standardise
+// on one envelope everywhere, including auth, instead of resource-named
+// shapes. This file was the last holdout on the old { cart }/{ item } shape.
 
 export async function getCart(req, res, next) {
   try {
     const cart = await cartService.getCart(req.user.id);
-    res.json({ cart });
+    res.json({ data: cart });
   } catch (err) {
     next(err);
   }
@@ -22,7 +22,7 @@ export async function addItem(req, res, next) {
   try {
     const { productId, quantity } = req.body;
     const item = await cartService.addItem(req.user.id, { productId, quantity });
-    res.status(201).json({ item });
+    res.status(201).json({ data: item });
   } catch (err) {
     next(err);
   }
@@ -33,7 +33,7 @@ export async function updateItem(req, res, next) {
     const itemId = Number(req.params.id);
     const { quantity } = req.body;
     const item = await cartService.updateItemQuantity(req.user.id, itemId, quantity);
-    res.json({ item });
+    res.json({ data: item });
   } catch (err) {
     next(err);
   }
