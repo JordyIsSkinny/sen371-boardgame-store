@@ -80,7 +80,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sen371_test
           DIRECT_URL: postgresql://postgres:postgres@localhost:5432/sen371_test
-        run: node ./node_modules/vitest/vitest.mjs run
+        run: npm run prisma:seed
 
       - name: Run tests
         working-directory: server
@@ -94,7 +94,7 @@ jobs:
           REFRESH_TOKEN_SECRET: test-refresh-secret
           JWT_EXPIRES_IN: 15m
           REFRESH_TOKEN_EXPIRES_IN: 7d
-        run: npm test
+        run: node ./node_modules/vitest/vitest.mjs run
 
   build:
     name: Build
