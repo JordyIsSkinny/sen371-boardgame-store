@@ -6,6 +6,7 @@ import { config } from "./config/index.js";
 import routes from "./routes/index.js";
 import { notFound } from "./middleware/notFound.js";
 import errorHandler from "./middleware/error-handler.js";
+import { serializeResponse } from "./middleware/serialize-response.js";
 import cookieParser from "cookie-parser";
 
 // This file is the architecture: it's the middleware chain from Milestone
@@ -24,7 +25,20 @@ export function createApp() {
 
   app.use(
     cors({
-      origin: config.clientOrigin,
+      // A function, not the allowlist directly: cors() reflects the caller's
+      // own Origin header back when this returns true, which is what
+      // credentialed cross-origin requests require — the alternative,
+      // handing it the array or "*", either can't combine with
+      // credentials: true or would accept every origin.
+      origin: (origin, callback) => {
+        if (!origin || config.clientOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        // Not an error: an unlisted origin should get no CORS headers so
+        // the browser blocks the response client-side, not a 500 that
+        // hands a probing client information about why it failed.
+        return callback(null, false);
+      },
       credentials: true,
     }),
   );
@@ -54,6 +68,8 @@ export function createApp() {
   // default, made explicit so it stays true if that default ever changes.
   app.use(express.json({ limit: "100kb" }));
 
+  app.use(serializeResponse);
+  
   app.use("/api/v1", routes);
 
   // Must come after all route mounts: catches anything nothing above matched.
