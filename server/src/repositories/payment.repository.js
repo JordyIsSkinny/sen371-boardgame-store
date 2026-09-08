@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prismaClient.js';
+import ConflictError from '../errors/conflict-error.js';
 
 export async function createPayment({ orderId, method }) {
   return prisma.$transaction(async (tx) => {
@@ -9,7 +10,7 @@ export async function createPayment({ orderId, method }) {
 
     const existingPayment = await tx.payment.findUnique({ where: { orderId } });
     if (existingPayment) {
-      throw new Error(`Payment already exists for order ${orderId}`);
+      throw new ConflictError(`Payment already exists for order ${orderId}`);
     }
 
     const payment = await tx.payment.create({
