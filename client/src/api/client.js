@@ -21,8 +21,10 @@ export async function refreshAccessToken() {
       credentials: "include",
     });
     if (!response.ok) return false;
-    const { accessToken: newToken } = await response.json();
-    setAccessToken(newToken);
+    // Every endpoint responds { data: ... } (team decision, issue #51 —
+    // covers auth too, not just resource endpoints).
+    const { data } = await response.json();
+    setAccessToken(data.accessToken);
     return true;
   } catch {
     return false;

@@ -50,25 +50,24 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function login(email, password) {
-    const { user: loggedInUser, accessToken } = await apiClient.post("/auth/login", {
-      email,
-      password,
-    });
-    setAccessToken(accessToken);
-    setUser(loggedInUser);
-    return loggedInUser;
+    // Every endpoint responds { data: ... } (team decision, issue #51 —
+    // covers auth too, not just resource endpoints).
+    const { data } = await apiClient.post("/auth/login", { email, password });
+    setAccessToken(data.accessToken);
+    setUser(data.user);
+    return data.user;
   }
 
   async function register(firstName, lastName, email, password) {
-    const { user: newUser, accessToken } = await apiClient.post("/auth/register", {
+    const { data } = await apiClient.post("/auth/register", {
       first_name: firstName,
       last_name: lastName,
       email,
       password,
     });
-    setAccessToken(accessToken);
-    setUser(newUser);
-    return newUser;
+    setAccessToken(data.accessToken);
+    setUser(data.user);
+    return data.user;
   }
 
   const value = { user, isLoading, login, register, logout };
