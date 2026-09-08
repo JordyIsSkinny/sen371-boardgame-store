@@ -1,19 +1,39 @@
 import { prisma } from '../lib/prismaClient.js';
 
-export async function getReviewsByProduct(productId) {
-  return prisma.review.findMany({
-    where: { productId },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
+export async function getReviewsByProduct(
+  productId,
+  { page = 1, pageSize = 10 } = {},
+) {
+  const skip = (Number(page) - 1) * Number(pageSize);
+  const take = Number(pageSize);
+
+  const [items, total] = await Promise.all([
+    prisma.review.findMany({
+      where: { productId },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.review.count({
+      where: { productId },
+    }),
+  ]);
+
+  return {
+    items,
+    total,
+    page: Number(page),
+    pageSize: Number(pageSize),
+  };
 }
 
 export async function getReviewById(id) {

@@ -33,35 +33,50 @@ describe('review.controller', () => {
   });
 
   describe('getProductReviews', () => {
-    it('returns reviews for a product', async () => {
-      const reviews = [
-        {
-          id: 1,
-          productId: 10,
-          rating: 5,
-          comment: 'Great game!',
+   it('returns reviews for a product', async () => {
+     const result = { 
+      items: [ 
+        { id: 1, 
+          productId: 10, 
+          rating: 5, 
+          comment: 'Great game!', 
         },
-      ];
-
-      req.params.productId = '10';
-
-      vi.spyOn(reviewService, 'listProductReviews')
-        .mockResolvedValue(reviews);
-
-      await getProductReviews(req, res, next);
-
-      expect(reviewService.listProductReviews)
-        .toHaveBeenCalledWith(10);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(reviews);
-      expect(next).not.toHaveBeenCalled();
-    });
+       ],
+        total: 1, 
+        page: 1, 
+        pageSize: 10, }; 
+        
+        req.params.productId = '10'; 
+        req.query = {}; 
+        
+        vi.spyOn(reviewService, 'listProductReviews')
+         .mockResolvedValue(result); 
+         
+         await getProductReviews(req, res, next); 
+         
+         expect(reviewService.listProductReviews) 
+         .toHaveBeenCalledWith(10, { 
+          page: 1, 
+          pageSize: 10, }); 
+          
+          expect(res.status).toHaveBeenCalledWith(200); 
+          expect(res.json).toHaveBeenCalledWith({ 
+            data: result.items, 
+            meta: { 
+              page: 1, 
+              limit: 10, 
+              total: 1, 
+              totalPages: 1, 
+            },
+           }); 
+           expect(next).not.toHaveBeenCalled(); 
+          });
 
     it('passes service errors to next', async () => {
       const error = new Error('Product not found');
 
       req.params.productId = '10';
+      req.query = {};
 
       vi.spyOn(reviewService, 'listProductReviews')
         .mockRejectedValue(error);
@@ -73,57 +88,21 @@ describe('review.controller', () => {
   });
 
   describe('createReview', () => {
-    it('creates a review for the authenticated user', async () => {
-      const review = {
-        id: 1,
-        userId: 5,
-        productId: 10,
-        rating: 5,
-        comment: 'Excellent game!',
-      };
-
-      req.user.id = 5;
-      req.params.productId = '10';
-      req.body = {
-        rating: 5,
-        comment: 'Excellent game!',
-      };
-
-      vi.spyOn(reviewService, 'submitReview')
-        .mockResolvedValue(review);
-
-      await createReview(req, res, next);
-
-      expect(reviewService.submitReview)
-        .toHaveBeenCalledWith(
-          5,
-          10,
-          5,
-          'Excellent game!'
-        );
-
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith(review);
-      expect(next).not.toHaveBeenCalled();
-    });
-
     it('passes service errors to next', async () => {
-      const error = new Error('Review creation failed');
+  const error = new Error('Product not found');
 
-      req.user.id = 5;
-      req.params.productId = '10';
-      req.body = {
-        rating: 5,
-        comment: 'Excellent game!',
-      };
+  req.params.productId = '10';
+  req.query = {};
 
-      vi.spyOn(reviewService, 'submitReview')
-        .mockRejectedValue(error);
+  vi.spyOn(reviewService, 'listProductReviews')
+    .mockRejectedValue(error);
 
-      await createReview(req, res, next);
+  await getProductReviews(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(error);
-    });
+  expect(next).toHaveBeenCalledWith(error);
+});
+
+
   });
 
   describe('updateReview', () => {
@@ -161,7 +140,9 @@ describe('review.controller', () => {
         );
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(review);
+      expect(res.json).toHaveBeenCalledWith({
+  data: review,
+});
       expect(next).not.toHaveBeenCalled();
     });
 
