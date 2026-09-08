@@ -30,7 +30,7 @@ function refreshCookieOptions() {
  */
 function sendAuthResponse(res, status, { user, accessToken, refreshToken }) {
   res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions());
-  return res.status(status).json({ data: { user, accessToken } });
+  return res.status(status).json({ user, accessToken });
 }
 
 export async function register(req, res, next) {
@@ -66,7 +66,7 @@ export async function refresh(req, res, next) {
     // Rotation: the presented token is revoked and a new one issued, so a
     // stolen token is usable at most once before the theft is detectable.
     res.cookie(REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
-    return res.status(200).json({ data: { accessToken: result.accessToken } });
+    return res.status(200).json({ accessToken: result.accessToken });
   } catch (err) {
     // Clear the cookie on any failure. Leaving a known-bad token in the
     // browser means the client retries with it on every page load.
@@ -91,5 +91,5 @@ export async function logout(req, res, next) {
  * so it needs no user service.
  */
 export async function me(req, res) {
-  return res.status(200).json({ data: { user: req.user } });
+  return res.status(200).json({ user: req.user });
 }
