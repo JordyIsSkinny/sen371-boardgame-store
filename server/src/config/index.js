@@ -14,7 +14,15 @@ export const config = {
 
   databaseUrl: required("DATABASE_URL"),
 
-  clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
+  // docs/security-addendum.md section 4: an allowlist, not a single value.
+  // M4 needs a developer running the client locally against the deployed API
+  // and the deployed GitHub Pages site to both work at once. A wildcard is
+  // not an option here: it's incompatible with credentialed requests, and it
+  // would let any site call the API with the refresh cookie attached.
+  clientOrigins: (process.env.CLIENT_ORIGIN ?? "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 
   jwt: {
     // Secrets use required(), same as databaseUrl, not a fallback: a
