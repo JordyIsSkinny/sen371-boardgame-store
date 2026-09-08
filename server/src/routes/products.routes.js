@@ -2,6 +2,14 @@ import { Router } from "express";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
 import {
+  validate,
+  productIdSchema,
+  createProductSchema,
+  updateProductSchema,
+  productQuerySchema,
+} from "../middleware/validate.js";
+
+import {
   getAllProducts,
   getProductById,
   createProduct,
@@ -9,10 +17,9 @@ import {
   deleteProduct,
   filterProducts,
 } from "../repositories/product.repository.js";
-
 const router = Router();
 
-router.get("/", async (req, res, next) => {
+router.get("/", validate({ query: productQuerySchema }), async (req, res, next) => {
   try {
     const { playerCount, categoryId, maxPlayTime, sortBy, sortDir, page, pageSize } = req.query;
     const hasFilters = playerCount || categoryId || maxPlayTime || sortBy || sortDir || page || pageSize;
@@ -37,7 +44,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.get("/:id", async (req, res, next) => {
+router.get("/:id", validate({ params: productIdSchema }), async (req, res, next) => {
   try {
     const product = await getProductById(Number(req.params.id));
     if (!product) {
@@ -49,7 +56,7 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.post("/", authenticate, authorize("admin"), async (req, res, next) => {
+router.post("/", authenticate, authorize("admin"), validate({ body: createProductSchema }), async (req, res, next) => {
   try {
     const product = await createProduct(req.body);
     res.status(201).json({ data: product });
@@ -58,7 +65,7 @@ router.post("/", authenticate, authorize("admin"), async (req, res, next) => {
   }
 });
 
-router.put("/:id", authenticate, authorize("admin"), async (req, res, next) => {
+router.put("/:id", authenticate, authorize("admin"), validate({ params: productIdSchema, body: updateProductSchema }), async (req, res, next) => {
   try {
     const product = await updateProduct(Number(req.params.id), req.body);
     res.json({ data: product });
@@ -67,7 +74,7 @@ router.put("/:id", authenticate, authorize("admin"), async (req, res, next) => {
   }
 });
 
-router.delete("/:id", authenticate, authorize("admin"), async (req, res, next) => {
+router.delete("/:id", authenticate, authorize("admin"), validate({ params: productIdSchema }), async (req, res, next) => {
   try {
     const product = await deleteProduct(Number(req.params.id));
     res.json({ data: product });

@@ -128,7 +128,3 @@ Tests are written before implementation, following the Red–Green–Refactor cy
 | Miles Mohale Pieterse (602327) | Architecture, integration |
 | Ipeleng Ntjana (601745) | Database, API |
 | Jordann Heunis (603115) | UI/UX, security, DevOps |
-
-## Documentation
-
-Full system plan, ERD, API specification and deployment plan are in [`docs/`](./docs).
