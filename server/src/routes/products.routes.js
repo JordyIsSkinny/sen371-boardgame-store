@@ -10,7 +10,6 @@ import {
 } from "../middleware/validate.js";
 
 import {
-  getAllProducts,
   getProductById,
   createProduct,
   updateProduct,
@@ -21,24 +20,37 @@ const router = Router();
 
 router.get("/", validate({ query: productQuerySchema }), async (req, res, next) => {
   try {
-    const { playerCount, categoryId, maxPlayTime, sortBy, sortDir, page, pageSize } = req.query;
-    const hasFilters = playerCount || categoryId || maxPlayTime || sortBy || sortDir || page || pageSize;
+    const {
+      playerCount,
+      categoryId,
+      maxPlayTime,
+      sortBy,
+      sortDir,
+      page = 1,
+      pageSize = 20,
+    } = req.query;
 
-    if (hasFilters) {
-      const result = await filterProducts({
-        playerCount,
-        categoryId,
-        maxPlayTime,
-        sortBy,
-        sortDir,
-        page,
-        pageSize,
-      });
-      return res.json(result);
-    }
+    const result = await filterProducts({
+      playerCount,
+      categoryId,
+      maxPlayTime,
+      sortBy,
+      sortDir,
+      page,
+      pageSize,
+    });
 
-    const products = await getAllProducts();
-    res.json({ data: products });
+    const totalPages = Math.ceil(result.total / result.pageSize);
+
+    res.json({
+      data: result.items,
+      meta: {
+        page: result.page,
+        limit: result.pageSize,
+        total: result.total,
+        totalPages,
+      },
+    });
   } catch (err) {
     next(err);
   }

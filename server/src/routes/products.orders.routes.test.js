@@ -45,24 +45,48 @@ beforeEach(() => {
 });
 
 describe("Product routes", () => {
-  it("GET /api/v1/products uses the list-products handler", async () => {
-    productRepository.getAllProducts.mockResolvedValue([
+ it("GET /api/v1/products returns paginated products", async () => {
+  productRepository.filterProducts.mockResolvedValue({
+    items: [
       { id: 1, title: "Catan" },
       { id: 2, title: "Ticket to Ride" },
-    ]);
-
-    const res = await request(app).get("/api/v1/products");
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      data: [
-        { id: 1, title: "Catan" },
-        { id: 2, title: "Ticket to Ride" },
-      ],
-    });
-    expect(productRepository.getAllProducts).toHaveBeenCalledTimes(1);
-    expect(productRepository.getProductById).not.toHaveBeenCalled();
+    ],
+    total: 47,
+    page: 1,
+    pageSize: 10,
   });
+
+  const res = await request(app)
+    .get("/api/v1/products")
+    .query({ page: 1, pageSize: 10 });
+
+  expect(res.status).toBe(200);
+  expect(res.body).toEqual({
+    data: [
+      { id: 1, title: "Catan" },
+      { id: 2, title: "Ticket to Ride" },
+    ],
+    meta: {
+      page: 1,
+      limit: 10,
+      total: 47,
+      totalPages: 5,
+    },
+  });
+
+  expect(productRepository.filterProducts).toHaveBeenCalledWith({
+    playerCount: undefined,
+    categoryId: undefined,
+    maxPlayTime: undefined,
+    sortBy: undefined,
+    sortDir: undefined,
+    page: "1",
+    pageSize: "10",
+  });
+
+  expect(productRepository.getAllProducts).not.toHaveBeenCalled();
+  expect(productRepository.getProductById).not.toHaveBeenCalled();
+});
 
   it("GET /api/v1/products/:id uses the single-product handler", async () => {
     productRepository.getProductById.mockResolvedValue({

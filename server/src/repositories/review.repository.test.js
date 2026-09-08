@@ -192,12 +192,15 @@ describe('createReview', () => {
 });
 
 describe('getReviewsByProduct', () => {
-  it('returns reviews belonging to the product', async () => {
-    const reviews = await getReviewsByProduct(testProduct.id);
+ it('returns reviews belonging to the product', async () => {
+  const result = await getReviewsByProduct(testProduct.id);
 
-    expect(Array.isArray(reviews)).toBe(true);
-    expect(reviews.some((review) => review.id === testReview.id)).toBe(true);
-  });
+  expect(Array.isArray(result.items)).toBe(true);
+  expect(result.items.some((review) => review.id === testReview.id)).toBe(true);
+  expect(result.total).toBeGreaterThanOrEqual(1);
+  expect(result.page).toBe(1);
+  expect(result.pageSize).toBe(10);
+});
 });
 
 describe('getReviewById', () => {

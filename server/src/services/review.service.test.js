@@ -181,12 +181,15 @@ afterAll(async () => {
 
 describe('listProductReviews', () => {
   it('returns reviews for an existing product', async () => {
-    const reviews = await listProductReviews(testProduct.id);
+  const result = await listProductReviews(testProduct.id);
 
-    expect(reviews).toHaveLength(1);
-    expect(reviews[0].id).toBe(testReview.id);
-    expect(reviews[0].productId).toBe(testProduct.id);
-  });
+  expect(result.items).toHaveLength(1);
+  expect(result.items[0].id).toBe(testReview.id);
+  expect(result.items[0].productId).toBe(testProduct.id);
+  expect(result.total).toBeGreaterThanOrEqual(1);
+  expect(result.page).toBe(1);
+  expect(result.pageSize).toBe(10);
+});
 
   it('throws NotFoundError for a nonexistent product', async () => {
     await expect(
