@@ -15,7 +15,11 @@ beforeAll(async () => {
   process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';
   process.env.JWT_SECRET ??= 'test-access-secret';
   process.env.REFRESH_TOKEN_SECRET ??= 'test-refresh-secret';
-  process.env.CLIENT_ORIGIN ??= 'http://localhost:5173';
+  // Two origins on purpose: this is what exercises the allowlist. A
+  // developer running the client locally against the deployed API, and the
+  // deployed GitHub Pages site itself, both need to work at once in M4.
+  process.env.CLIENT_ORIGIN ??=
+    'http://localhost:5173,https://jordyisskinny.github.io';
 
   const [{ createApp }, configModule, supertestModule] = await Promise.all([
     import('./app.js'),
@@ -38,14 +42,45 @@ describe('security headers (System Plan 8.4)', () => {
   });
 });
 
-describe('CORS (System Plan 8.4)', () => {
-  it('restricts the allowed origin to CLIENT_ORIGIN and allows credentials', async () => {
+describe('CORS (System Plan 8.4, docs/security-addendum.md section 4)', () => {
+  it('reflects and allows credentials for the first configured origin', async () => {
     const res = await request(app)
       .get('/api/v1/health')
-      .set('Origin', config.clientOrigin);
+      .set('Origin', config.clientOrigins[0]);
 
-    expect(res.headers['access-control-allow-origin']).toBe(config.clientOrigin);
+    expect(res.headers['access-control-allow-origin']).toBe(config.clientOrigins[0]);
     expect(res.headers['access-control-allow-credentials']).toBe('true');
+  });
+
+  // The whole point of the allowlist: a developer running the client
+  // locally against the deployed API, and the deployed GitHub Pages site
+  // itself, are both legitimate origins that need to work simultaneously.
+  it('reflects and allows credentials for a second configured origin', async () => {
+    const res = await request(app)
+      .get('/api/v1/health')
+      .set('Origin', config.clientOrigins[1]);
+
+    expect(res.headers['access-control-allow-origin']).toBe(config.clientOrigins[1]);
+    expect(res.headers['access-control-allow-credentials']).toBe('true');
+  });
+
+  it('does not reflect an origin outside the allowlist', async () => {
+    const res = await request(app)
+      .get('/api/v1/health')
+      .set('Origin', 'https://not-allowed.example');
+
+    // No Access-Control-Allow-Origin header means the browser refuses to
+    // expose the response to the calling page's JS, even though the server
+    // still answers normally underneath — the same reasoning as a same-site
+    // cookie: the block happens client-side, not as a server error.
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('still serves a request with no Origin header, e.g. curl or a server-to-server call', async () => {
+    const res = await request(app).get('/api/v1/health');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
   });
 });
 
