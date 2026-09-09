@@ -33,29 +33,33 @@ rather than drifting through unrelated colours.
 
 | Token | Hex | Source |
 |---|---|---|
-| `neutral-50` | `#F7F5F1` | given (CLAUDE.md) |
-| `neutral-100`–`neutral-800` | — | generated — whole-range HSL interpolation |
-| `neutral-900` | `#1A1A1A` | given (CLAUDE.md) |
+| `neutral-100` | `#F7F5F1` | given |
+| `neutral-200` | `#E1DDD4` | generated — HSL midpoint of 100/300 |
+| `neutral-300` | `#C7C4BC` | given |
+| `neutral-400` | `#ABA79E` | generated — HSL midpoint of 300/500 |
+| `neutral-500` | `#8E8A80` | given |
+| `neutral-600` | `#726E64` | generated — HSL midpoint of 500/700 |
+| `neutral-700` | `#54514A` | given |
+| `neutral-800` | `#363433` | generated — HSL midpoint of 700/900 |
+| `neutral-900` | `#1A1A1A` | given |
 
-**Not yet confirmed against a Figma export** — Figma's design system doesn't
-cover neutral or accent (confirmed with Jordann). Only the two endpoints are
-given; every stop in between is a whole-range HSL interpolation, with
-saturation eased out faster than lightness so the midtones read as warm gray
-rather than muddy taupe (the endpoints aren't pure gray — 50 carries a warm
-cream tint, 900 is achromatic). Revisit alongside primary if Figma adds a
-real neutral scale later.
+Now confirmed against the Figma export, same five-stop pattern as primary
+(100/300/500/700/900 given, no `neutral-50`). All five given stops carry a
+consistent ~40-44° hue except `neutral-900` (achromatic), so 200/400/600/800
+are generated the same way as primary's — HSL midpoint between real
+neighbours.
 
 ### Accent — amber
 
 | Token | Hex | Source |
 |---|---|---|
-| `accent` | `#E8A33D` | given (CLAUDE.md) |
+| `accent` | `#E8A33D` | given |
 
 One value, not a scale. **Surface colour only** — button and badge
-backgrounds, never text on a light background: it fails WCAG AA contrast at
-that size (checked: ~2:1 against `neutral-50`, well under the 4.5:1 minimum
-for normal text). Dark text (`primary-900`) on an amber surface passes
-comfortably (~8:1).
+backgrounds, never text on a light background: Figma's own export states
+2.1:1 against a light background, well under the 4.5:1 minimum for normal
+text (independently checked here: ~2:1). Dark text (`primary-900`) on an
+amber surface passes comfortably (~8:1).
 
 ## Type
 
@@ -104,10 +108,8 @@ Named by role rather than size, matching how the design system states it.
 
 ## Provenance
 
-- **Primary, type scale, radius**: Figma design system export (screenshot,
-  reviewed 2026-09-09).
-- **Neutral, accent**: `CLAUDE.md` (M4 frontend conventions) — not yet in
-  Figma.
+- **Primary, neutral, accent, type scale, radius**: Figma design system
+  export (screenshots, reviewed 2026-09-09).
 
 If a value here and the live Figma file ever disagree, Figma wins — update
 this doc and `client/src/index.css` to match, not the other way around.
