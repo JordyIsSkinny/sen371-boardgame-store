@@ -464,3 +464,122 @@ export const orderIdSchema = (params) => {
 
   return errors;
 };
+export function isValidEmail(value) {
+  return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+export const userIdSchema = (params) => {
+  const errors = [];
+
+  if (!isValidId(params.id)) {
+    errors.push({
+      field: "id",
+      message: "User ID must be a positive integer.",
+    });
+  }
+
+  return errors;
+};
+export const updateUserSchema = (body) => {
+  const errors = [];
+  const allowedFields = ["firstName", "lastName", "email"];
+
+  if (!hasOnlyAllowedFields(body, allowedFields)) {
+    errors.push({
+      field: "body",
+      message: `Only the following fields may be updated: ${allowedFields.join(", ")}.`,
+    });
+    return errors;
+  }
+
+  if (body.firstName !== undefined && !isNonEmptyString(body.firstName)) {
+    errors.push({
+      field: "firstName",
+      message: "First name must be a non-empty string.",
+    });
+  }
+
+  if (body.lastName !== undefined && !isNonEmptyString(body.lastName)) {
+    errors.push({
+      field: "lastName",
+      message: "Last name must be a non-empty string.",
+    });
+  }
+
+  if (body.email !== undefined && !isValidEmail(body.email)) {
+    errors.push({
+      field: "email",
+      message: "Email must be a valid email address.",
+    });
+  }
+
+  return errors;
+};
+export const updateInventorySchema = (body) => {
+  const errors = [];
+
+  if (body.quantityOnHand !== undefined && !isNonNegativeInteger(body.quantityOnHand)) {
+    errors.push({
+      field: "quantityOnHand",
+      message: "Quantity on hand must be a non-negative integer.",
+    });
+  }
+
+  if (body.reorderThreshold !== undefined && !isNonNegativeInteger(body.reorderThreshold)) {
+    errors.push({
+      field: "reorderThreshold",
+      message: "Reorder threshold must be a non-negative integer.",
+    });
+  }
+
+  if (!hasOnlyAllowedFields(body, ["quantityOnHand", "reorderThreshold"])) {
+    errors.push({
+      field: "body",
+      message: "Only quantityOnHand and reorderThreshold may be updated.",
+    });
+  }
+
+  return errors;
+};
+export const productIdParamSchema = (params) => {
+  const errors = [];
+
+  if (!isValidId(params.productId)) {
+    errors.push({
+      field: "productId",
+      message: "Product ID must be a positive integer.",
+    });
+  }
+
+  return errors;
+};
+export const createPaymentSchema = (body) => {
+  const errors = [];
+
+  if (!isValidId(body.orderId)) {
+    errors.push({
+      field: "orderId",
+      message: "Order ID must be a positive integer.",
+    });
+  }
+
+  if (!isValidEnum(body.method, ["card", "eft"])) {
+    errors.push({
+      field: "method",
+      message: "Payment method must be either card or eft.",
+    });
+  }
+
+  return errors;
+};
+export const orderIdParamSchema = (params) => {
+  const errors = [];
+
+  if (!isValidId(params.orderId)) {
+    errors.push({
+      field: "orderId",
+      message: "Order ID must be a positive integer.",
+    });
+  }
+
+  return errors;
+};
