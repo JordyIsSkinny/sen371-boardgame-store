@@ -1,23 +1,17 @@
 @import "tailwindcss";
 
 /*
- * Design tokens from the Figma design system (CLAUDE.md, M4 frontend
- * conventions). Tailwind v4 is CSS-first — tokens are declared here in an
- * @theme block rather than in a tailwind.config.js, which is what the
- * installed @tailwindcss/vite plugin expects. Every token below becomes a
- * utility automatically: --color-primary-500 -> bg-primary-500,
- * text-primary-500, border-primary-500, etc.
+ * Design tokens. Values and sources are documented in
+ * docs/design-system.md — check there, not just these comments, for what's
+ * confirmed against Figma versus generated to fill a gap. Tailwind v4 is
+ * CSS-first — tokens are declared here in an @theme block rather than in a
+ * tailwind.config.js, which is what the installed @tailwindcss/vite plugin
+ * expects. Every token below becomes a utility automatically:
+ * --color-primary-500 -> bg-primary-500, text-primary-500, border-primary-500, etc.
  */
 @theme {
-  /*
-   * Primary indigo, from the Figma design system export directly (Colour >
-   * Primary - Indigo): 100/300/500/700/900 are exact values off the file,
-   * not interpolated. Figma's scale starts at 100 (#E6E4F5) — there is no
-   * 50 stop, so this theme doesn't invent one either. 200/400/600/800 are
-   * the midpoint between their two neighbouring real stops in HSL space
-   * (all five given stops share the same ~247° hue, so a hue-preserving
-   * blend stays on-family instead of drifting through unrelated colors).
-   */
+  /* Primary indigo — see docs/design-system.md for which stops are given
+   * vs generated. */
   --color-primary-100: #e6e4f5;
   --color-primary-200: #b7b2de;
   --color-primary-300: #8a83c4;
@@ -28,16 +22,8 @@
   --color-primary-800: #252141;
   --color-primary-900: #1b1830;
 
-  /*
-   * Neutral, #1A1A1A (900) to #F7F5F1 (50), per CLAUDE.md — not yet
-   * confirmed against a Figma export the way primary was above, so 100-800
-   * are still a whole-range HSL interpolation rather than real midpoints.
-   * Saturation eases out faster than lightness: the given endpoints aren't
-   * pure gray (50 carries a warm cream tint, 900 is achromatic), and
-   * interpolating saturation linearly alongside lightness pulled the
-   * midtones toward a muddy taupe instead of a usable gray. Revisit
-   * alongside primary once neutral's real Figma stops are available.
-   */
+  /* Neutral — not yet confirmed against Figma (it isn't in the export
+   * yet); see docs/design-system.md. */
   --color-neutral-50: #f7f5f1;
   --color-neutral-100: #e3ddd5;
   --color-neutral-200: #ccc4bb;
@@ -49,27 +35,20 @@
   --color-neutral-800: #323232;
   --color-neutral-900: #1a1a1a;
 
-  /*
-   * Accent amber. One value, not a scale — CLAUDE.md specifies a single
-   * hex, and it's a surface colour only (button/badge backgrounds), never
-   * small text on white: it fails WCAG AA at body-text sizes. Enforced by
-   * convention, not CSS — worth catching in review, not something a token
-   * alone can prevent.
-   */
+  /* Accent amber. One value, not a scale — surface colour only
+   * (button/badge backgrounds), never small text on white: fails WCAG AA
+   * at that size. Enforced by convention, not CSS. */
   --color-accent: #e8a33d;
 
-  /* Headings Bricolage Grotesque, body Inter, per CLAUDE.md. Loaded via
-   * Google Fonts in index.html; system-font fallbacks cover the load gap
-   * and a fonts.googleapis.com outage. */
+  /* Headings Bricolage Grotesque, body Inter. Loaded via Google Fonts in
+   * index.html; system-font fallbacks cover the load gap and a
+   * fonts.googleapis.com outage. */
   --font-heading: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /*
-   * Type scale, from the Figma export (Typography). Sizes only — no
-   * line-heights were specified there, so these fall back to the browser
-   * default rather than a guessed number. text-display -> text-display,
-   * text-h1 -> text-h1, etc.
-   */
+  /* Type scale. Sizes only — no line-heights were specified in the export,
+   * so these fall back to the browser default rather than a guessed
+   * number. */
   --text-display: 3rem; /* 48px */
   --text-h1: 2.4375rem; /* 39px */
   --text-h2: 1.9375rem; /* 31px */
@@ -88,11 +67,7 @@
    * values, so no override is needed here either.
    */
 
-  /*
-   * Radius, from the Figma export (Spacing and radius). Named by role
-   * rather than size, since that's how the design system states it:
-   * rounded-input, rounded-card, rounded-modal, rounded-pill.
-   */
+  /* Radius, named by role rather than size, matching the design system. */
   --radius-input: 4px;
   --radius-card: 8px;
   --radius-modal: 12px;
