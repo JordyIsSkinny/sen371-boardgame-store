@@ -64,15 +64,27 @@ export async function filterProducts({
   const skip = (Number(page) - 1) * Number(pageSize);
   const take = Number(pageSize);
 
-  const [items, total] = await Promise.all([
+  const [rows, total] = await Promise.all([
     prisma.product.findMany({
       where,
       orderBy: { [orderByField]: orderByDir },
       skip,
       take,
+      include: {
+        categories: { include: { category: true } },
+        inventory: true,
+      },
     }),
     prisma.product.count({ where }),
   ]);
+
+  // Flatten the categories join table into plain category objects — the
+  // catalogue card needs a category name, not a { productId, categoryId }
+  // pivot row.
+  const items = rows.map(({ categories, ...product }) => ({
+    ...product,
+    categories: categories.map((pc) => pc.category),
+  }));
 
   return {
     items,
