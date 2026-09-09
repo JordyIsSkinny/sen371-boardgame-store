@@ -375,7 +375,7 @@ export function Catalogue() {
                   key={pageNum}
                   className={`flex h-9 w-9 items-center justify-center rounded-input text-sm ${
                     pageNum === meta.page
-                      ? "bg-primary-900 text-neutral-50"
+                      ? "bg-primary-900 text-neutral-100"
                       : "border border-neutral-200 text-neutral-700"
                   }`}
                 >

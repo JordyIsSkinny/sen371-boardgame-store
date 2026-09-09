@@ -7,7 +7,7 @@ export function Layout() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-50 text-neutral-900">
+    <div className="flex min-h-screen flex-col bg-neutral-100 text-neutral-900">
       <header className="border-b border-neutral-200 bg-white">
         <nav className="mx-auto flex max-w-6xl items-center justify-between p-4">
           <NavLink to="/" className="font-heading text-h4 text-primary-900">
