@@ -65,6 +65,23 @@ const POLICY = [
   // an uptime probe. Team-confirmed (Miles agreed on PR #83), not defaulted
   // into silently.
   { method: 'get', path: '/health', requires: PUBLIC },
+
+  // Users — GET/PUT /users/me act on the caller only; the list and by-id
+  // routes are admin-only per docs/security-addendum.md "Users".
+  { method: 'get', path: '/users/me', requires: AUTH },
+  { method: 'put', path: '/users/me', requires: AUTH },
+  { method: 'get', path: '/users', requires: ADMIN },
+  { method: 'get', path: '/users/:id', requires: ADMIN },
+
+  // Payments — both routes resolve the order from the request (body for
+  // POST, params for GET) and run it through requireOwnershipOrAdmin, same
+  // as GET /orders/:id, per docs/security-addendum.md "Payments".
+  { method: 'post', path: '/payments', requires: OWNER },
+  { method: 'get', path: '/payments/:orderId', requires: OWNER },
+
+  // Inventory — admin-only per docs/security-addendum.md "Inventory".
+  { method: 'get', path: '/inventory/:productId', requires: ADMIN },
+  { method: 'put', path: '/inventory/:productId', requires: ADMIN },
 ];
 
 /** Middleware function names, as they appear on the Express layer stack. */
