@@ -577,3 +577,23 @@ export const orderIdParamSchema = (params) => {
 
   return errors;
 };
+
+export const createCategorySchema = (body) => {
+  const errors = [];
+
+  if (!isNonEmptyString(body.name)) {
+    errors.push({
+      field: 'name',
+      message: 'Name must be a non-empty string.',
+    });
+  }
+
+  if (!isNonEmptyString(body.slug)) {
+    errors.push({
+      field: 'slug',
+      message: 'Slug must be a non-empty string.',
+    });
+  }
+
+  return errors;
+};
