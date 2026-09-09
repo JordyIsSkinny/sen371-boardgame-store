@@ -1,52 +1,39 @@
-import { Router } from 'express';
-import { authenticate } from '../middleware/authenticate.js';
-import { requireOwnershipOrAdmin } from '../middleware/require-ownership.js';
-import { validate, createPaymentSchema, orderIdParamSchema } from '../middleware/validate.js';
-import { createPayment, getPaymentByOrderId, } from '../repositories/payment.repository.js';
-import { getOrderById } from '../repositories/order.repository.js';
+import { Router } from "express";
+import { authenticate } from "../middleware/authenticate.js";
+import { validate, createPaymentSchema, orderIdParamSchema } from "../middleware/validate.js";
+import { requireOwnershipOrAdmin } from "../middleware/require-ownership.js";
+import { getOrderById } from "../repositories/order.repository.js";
+import * as paymentController from "../controllers/payment.controller.js";
 
 const router = Router();
 
+// requireOwnershipOrAdmin also covers POST: the order to pay for is named in
+// the body rather than the URL, but the same 404-not-403 enumeration rule
+// applies (security-addendum.md "Payments" section / section 2), so it
+// reuses the same middleware orders.routes.js already established for
+// GET /orders/:id.
 router.post(
-  '/',
+  "/",
   authenticate,
   validate({ body: createPaymentSchema }),
   requireOwnershipOrAdmin({
     load: (req) => getOrderById(Number(req.body.orderId)),
-    resourceName: 'Order',
-    attachAs: 'order',
+    resourceName: "Order",
+    attachAs: "order",
   }),
-  async (req, res, next) => {
-    try {
-      const { method } = req.body;
-      const payment = await createPayment({ orderId: req.order.id, method });
-      res.status(201).json({ data: payment });
-    } catch (err) {
-      next(err);
-    }
-  }
+  paymentController.createPayment,
 );
 
 router.get(
-  '/:orderId',
+  "/:orderId",
   authenticate,
   validate({ params: orderIdParamSchema }),
   requireOwnershipOrAdmin({
     load: (req) => getOrderById(Number(req.params.orderId)),
-    resourceName: 'Order',
-    attachAs: 'order',
+    resourceName: "Order",
+    attachAs: "order",
   }),
-  async (req, res, next) => {
-    try {
-      const payment = await getPaymentByOrderId(req.order.id);
-      if (!payment) {
-        return res.status(404).json({ error: 'NOT_FOUND', message: 'Payment not found for this order' });
-      }
-      res.json({ data: payment });
-    } catch (err) {
-      next(err);
-    }
-  }
+  paymentController.getPayment,
 );
 
 export default router;

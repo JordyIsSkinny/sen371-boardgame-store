@@ -90,6 +90,9 @@ export function hasOnlyAllowedFields(object, allowedFields) {
 export function isValidEnum(value, allowedValues) {
   return allowedValues.includes(value);
 }
+export function isValidEmail(value) {
+  return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 export const productIdSchema = (params) => {
   const errors = [];
 
@@ -465,40 +468,49 @@ export const orderIdSchema = (params) => {
   return errors;
 };
 
-export const updateUserSchema = (body) => {
+export const userIdSchema = (params) => {
   const errors = [];
 
-  if (body.firstName !== undefined && !isNonEmptyString(body.firstName)) {
+  if (!isValidId(params.id)) {
     errors.push({
-      field: 'firstName',
-      message: 'First name must be a non-empty string.',
-    });
-  }
-
-  if (body.lastName !== undefined && !isNonEmptyString(body.lastName)) {
-    errors.push({
-      field: 'lastName',
-      message: 'Last name must be a non-empty string.',
-    });
-  }
-
-  if (!hasOnlyAllowedFields(body, ['firstName', 'lastName'])) {
-    errors.push({
-      field: 'body',
-      message: 'Only firstName and lastName may be updated.',
+      field: "id",
+      message: "User ID must be a positive integer.",
     });
   }
 
   return errors;
 };
 
-export const userIdSchema = (params) => {
+export const updateUserSchema = (body) => {
   const errors = [];
+  const allowedFields = ["firstName", "lastName", "email"];
 
-  if (!isValidId(params.id)) {
+  if (!hasOnlyAllowedFields(body, allowedFields)) {
     errors.push({
-      field: 'id',
-      message: 'User ID must be a positive integer.',
+      field: "body",
+      message: `Only the following fields may be updated: ${allowedFields.join(", ")}.`,
+    });
+    return errors;
+  }
+
+  if (body.firstName !== undefined && !isNonEmptyString(body.firstName)) {
+    errors.push({
+      field: "firstName",
+      message: "First name must be a non-empty string.",
+    });
+  }
+
+  if (body.lastName !== undefined && !isNonEmptyString(body.lastName)) {
+    errors.push({
+      field: "lastName",
+      message: "Last name must be a non-empty string.",
+    });
+  }
+
+  if (body.email !== undefined && !isValidEmail(body.email)) {
+    errors.push({
+      field: "email",
+      message: "Email must be a valid email address.",
     });
   }
 
@@ -510,22 +522,22 @@ export const updateInventorySchema = (body) => {
 
   if (body.quantityOnHand !== undefined && !isNonNegativeInteger(body.quantityOnHand)) {
     errors.push({
-      field: 'quantityOnHand',
-      message: 'Quantity on hand must be a non-negative integer.',
+      field: "quantityOnHand",
+      message: "Quantity on hand must be a non-negative integer.",
     });
   }
 
   if (body.reorderThreshold !== undefined && !isNonNegativeInteger(body.reorderThreshold)) {
     errors.push({
-      field: 'reorderThreshold',
-      message: 'Reorder threshold must be a non-negative integer.',
+      field: "reorderThreshold",
+      message: "Reorder threshold must be a non-negative integer.",
     });
   }
 
-  if (!hasOnlyAllowedFields(body, ['quantityOnHand', 'reorderThreshold'])) {
+  if (!hasOnlyAllowedFields(body, ["quantityOnHand", "reorderThreshold"])) {
     errors.push({
-      field: 'body',
-      message: 'Only quantityOnHand and reorderThreshold may be updated.',
+      field: "body",
+      message: "Only quantityOnHand and reorderThreshold may be updated.",
     });
   }
 
@@ -537,8 +549,8 @@ export const productIdParamSchema = (params) => {
 
   if (!isValidId(params.productId)) {
     errors.push({
-      field: 'productId',
-      message: 'Product ID must be a positive integer.',
+      field: "productId",
+      message: "Product ID must be a positive integer.",
     });
   }
 
@@ -550,15 +562,15 @@ export const createPaymentSchema = (body) => {
 
   if (!isValidId(body.orderId)) {
     errors.push({
-      field: 'orderId',
-      message: 'Order ID must be a positive integer.',
+      field: "orderId",
+      message: "Order ID must be a positive integer.",
     });
   }
 
-  if (!isValidEnum(body.method, ['card', 'eft'])) {
+  if (!isValidEnum(body.method, ["card", "eft"])) {
     errors.push({
-      field: 'method',
-      message: 'Payment method must be either card or eft.',
+      field: "method",
+      message: "Payment method must be either card or eft.",
     });
   }
 
@@ -570,8 +582,8 @@ export const orderIdParamSchema = (params) => {
 
   if (!isValidId(params.orderId)) {
     errors.push({
-      field: 'orderId',
-      message: 'Order ID must be a positive integer.',
+      field: "orderId",
+      message: "Order ID must be a positive integer.",
     });
   }
 
@@ -583,15 +595,15 @@ export const createCategorySchema = (body) => {
 
   if (!isNonEmptyString(body.name)) {
     errors.push({
-      field: 'name',
-      message: 'Name must be a non-empty string.',
+      field: "name",
+      message: "Name must be a non-empty string.",
     });
   }
 
   if (!isNonEmptyString(body.slug)) {
     errors.push({
-      field: 'slug',
-      message: 'Slug must be a non-empty string.',
+      field: "slug",
+      message: "Slug must be a non-empty string.",
     });
   }
 

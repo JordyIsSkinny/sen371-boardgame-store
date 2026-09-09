@@ -703,7 +703,7 @@ const products = [
     price: 1299.99,
     imageUrl: null,
     categories: ["strategy"],
-    quantityOnHand: 5,
+    quantityOnHand: 2,
     reorderThreshold: 2,
   },
   {
@@ -720,7 +720,7 @@ const products = [
     price: 1199.99,
     imageUrl: null,
     categories: ["strategy"],
-    quantityOnHand: 5,
+    quantityOnHand: 0,
     reorderThreshold: 2,
   },
   {
@@ -969,6 +969,7 @@ async function main() {
       reorderThreshold,
       ...productData
     } = product;
+    productData.imageUrl = `https://placehold.co/600x800?text=${encodeURIComponent(product.title)}`;
 
     const createdProduct = await prisma.product.upsert({
       where: { slug: product.slug },
