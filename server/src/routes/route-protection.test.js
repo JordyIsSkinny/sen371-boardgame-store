@@ -61,6 +61,23 @@ const POLICY = [
   { method: 'put', path: '/reviews/:id', requires: AUTH },
   { method: 'delete', path: '/reviews/:id', requires: AUTH },
 
+  // Users
+  { method: 'get', path: '/users/me', requires: AUTH },
+  { method: 'put', path: '/users/me', requires: AUTH },
+  { method: 'get', path: '/users', requires: ADMIN },
+  { method: 'get', path: '/users/:id', requires: ADMIN },
+
+  // Inventory — admin only
+  { method: 'get', path: '/inventory/:productId', requires: ADMIN },
+  { method: 'put', path: '/inventory/:productId', requires: ADMIN },
+
+  // Payments — ownership-scoped
+  { method: 'post', path: '/payments', requires: OWNER },
+  { method: 'get', path: '/payments/:orderId', requires: OWNER },
+
+  // Categories management — admin only
+  { method: 'post', path: '/categories', requires: ADMIN },
+
   // Health check — reachable without a token is the only sane default for
   // an uptime probe. Team-confirmed (Miles agreed on PR #83), not defaulted
   // into silently.
