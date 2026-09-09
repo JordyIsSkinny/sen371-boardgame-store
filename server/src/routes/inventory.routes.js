@@ -3,7 +3,7 @@ import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
 import {
   validate,
-  inventoryProductIdSchema,
+  productIdParamSchema,
   updateInventorySchema,
 } from "../middleware/validate.js";
 import * as inventoryController from "../controllers/inventory.controller.js";
@@ -14,7 +14,7 @@ router.get(
   "/:productId",
   authenticate,
   authorize("admin"),
-  validate({ params: inventoryProductIdSchema }),
+  validate({ params: productIdParamSchema }),
   inventoryController.getInventory,
 );
 
@@ -22,7 +22,7 @@ router.put(
   "/:productId",
   authenticate,
   authorize("admin"),
-  validate({ params: inventoryProductIdSchema, body: updateInventorySchema }),
+  validate({ params: productIdParamSchema, body: updateInventorySchema }),
   inventoryController.updateInventory,
 );
 

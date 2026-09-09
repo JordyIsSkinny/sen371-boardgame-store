@@ -1,27 +1,40 @@
 import { prisma } from '../lib/prismaClient.js';
 
+// role, not roleId: login/register (user.repository.js) already return
+// user.role as a resolved string, and the client's AdminRoute guard checks
+// user.role === 'admin'. Returning the raw FK here instead left an admin
+// redirected away from /admin on every reload, since the silent-refresh path
+// uses GET /users/me for the full profile.
 const PUBLIC_USER_FIELDS = {
   id: true,
-  roleId: true,
   email: true,
   firstName: true,
   lastName: true,
   createdAt: true,
   updatedAt: true,
+  role: { select: { name: true } },
 };
 
+function toPublicUser(user) {
+  if (!user) return null;
+  const { role, ...rest } = user;
+  return { ...rest, role: role?.name };
+}
+
 export async function getUserById(id) {
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id },
     select: PUBLIC_USER_FIELDS,
   });
+  return toPublicUser(user);
 }
 
 export async function getAllUsers() {
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     select: PUBLIC_USER_FIELDS,
     orderBy: { createdAt: 'desc' },
   });
+  return users.map(toPublicUser);
 }
 
 export async function updateUser(id, data) {
@@ -33,9 +46,10 @@ export async function updateUser(id, data) {
     if (data[key] !== undefined) safeData[key] = data[key];
   }
 
-  return prisma.user.update({
+  const user = await prisma.user.update({
     where: { id },
     data: safeData,
     select: PUBLIC_USER_FIELDS,
   });
+  return toPublicUser(user);
 }

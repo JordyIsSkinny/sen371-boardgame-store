@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/authenticate.js";
-import { validate, createPaymentSchema, paymentOrderIdSchema } from "../middleware/validate.js";
+import { validate, createPaymentSchema, orderIdParamSchema } from "../middleware/validate.js";
 import { requireOwnershipOrAdmin } from "../middleware/require-ownership.js";
 import { getOrderById } from "../repositories/order.repository.js";
 import * as paymentController from "../controllers/payment.controller.js";
@@ -27,7 +27,7 @@ router.post(
 router.get(
   "/:orderId",
   authenticate,
-  validate({ params: paymentOrderIdSchema }),
+  validate({ params: orderIdParamSchema }),
   requireOwnershipOrAdmin({
     load: (req) => getOrderById(Number(req.params.orderId)),
     resourceName: "Order",

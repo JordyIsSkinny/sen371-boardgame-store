@@ -514,6 +514,44 @@ export const updateUserSchema = (body) => {
 
   return errors;
 };
+export const updateInventorySchema = (body) => {
+  const errors = [];
+
+  if (body.quantityOnHand !== undefined && !isNonNegativeInteger(body.quantityOnHand)) {
+    errors.push({
+      field: "quantityOnHand",
+      message: "Quantity on hand must be a non-negative integer.",
+    });
+  }
+
+  if (body.reorderThreshold !== undefined && !isNonNegativeInteger(body.reorderThreshold)) {
+    errors.push({
+      field: "reorderThreshold",
+      message: "Reorder threshold must be a non-negative integer.",
+    });
+  }
+
+  if (!hasOnlyAllowedFields(body, ["quantityOnHand", "reorderThreshold"])) {
+    errors.push({
+      field: "body",
+      message: "Only quantityOnHand and reorderThreshold may be updated.",
+    });
+  }
+
+  return errors;
+};
+export const productIdParamSchema = (params) => {
+  const errors = [];
+
+  if (!isValidId(params.productId)) {
+    errors.push({
+      field: "productId",
+      message: "Product ID must be a positive integer.",
+    });
+  }
+
+  return errors;
+};
 export const createPaymentSchema = (body) => {
   const errors = [];
 
@@ -527,56 +565,19 @@ export const createPaymentSchema = (body) => {
   if (!isValidEnum(body.method, ["card", "eft"])) {
     errors.push({
       field: "method",
-      message: "Method must be either card or eft.",
+      message: "Payment method must be either card or eft.",
     });
   }
 
   return errors;
 };
-export const paymentOrderIdSchema = (params) => {
+export const orderIdParamSchema = (params) => {
   const errors = [];
 
   if (!isValidId(params.orderId)) {
     errors.push({
       field: "orderId",
       message: "Order ID must be a positive integer.",
-    });
-  }
-
-  return errors;
-};
-export const inventoryProductIdSchema = (params) => {
-  const errors = [];
-
-  if (!isValidId(params.productId)) {
-    errors.push({
-      field: "productId",
-      message: "Product ID must be a positive integer.",
-    });
-  }
-
-  return errors;
-};
-export const updateInventorySchema = (body) => {
-  const errors = [];
-
-  if (
-    body.quantityOnHand !== undefined &&
-    !isNonNegativeInteger(body.quantityOnHand)
-  ) {
-    errors.push({
-      field: "quantityOnHand",
-      message: "Quantity on hand must be a non-negative integer.",
-    });
-  }
-
-  if (
-    body.reorderThreshold !== undefined &&
-    !isNonNegativeInteger(body.reorderThreshold)
-  ) {
-    errors.push({
-      field: "reorderThreshold",
-      message: "Reorder threshold must be a non-negative integer.",
     });
   }
 

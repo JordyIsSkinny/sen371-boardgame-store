@@ -44,21 +44,16 @@ describe("inventory.service", () => {
       expect(inventoryRepository.updateInventory).toHaveBeenCalledWith(1, { quantityOnHand: 10 });
     });
 
-    it("translates the repository's negative-value guard into ValidationError", async () => {
-      inventoryRepository.updateInventory.mockRejectedValue(
-        new Error("quantityOnHand cannot be negative"),
-      );
+    it("propagates repository errors unchanged, e.g. the negative-value ValidationError", async () => {
+      // The repository throws ValidationError directly as a backstop (see
+      // inventory.repository.js) — nothing left for this service to
+      // translate, just a pass-through call.
+      const validationError = new Error("quantityOnHand cannot be negative");
+      inventoryRepository.updateInventory.mockRejectedValue(validationError);
 
       await expect(
         inventoryService.updateInventory(1, { quantityOnHand: -1 }),
-      ).rejects.toMatchObject({ status: 422, error: "VALIDATION_ERROR" });
-    });
-
-    it("rethrows unrelated repository errors unchanged", async () => {
-      const unexpected = new Error("connection lost");
-      inventoryRepository.updateInventory.mockRejectedValue(unexpected);
-
-      await expect(inventoryService.updateInventory(1, {})).rejects.toBe(unexpected);
+      ).rejects.toBe(validationError);
     });
   });
 });

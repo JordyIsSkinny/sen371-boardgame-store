@@ -34,22 +34,14 @@ describe("payment.service", () => {
       expect(paymentRepository.createPayment).toHaveBeenCalledWith({ orderId: 1, method: "card" });
     });
 
-    it("translates a duplicate-payment repository error into ConflictError", async () => {
-      paymentRepository.createPayment.mockRejectedValue(
-        new Error("Payment already exists for order 1"),
-      );
+    it("propagates repository errors unchanged, e.g. the duplicate-payment ConflictError", async () => {
+      // The repository throws ConflictError directly (see
+      // payment.repository.js) — nothing left for this service to
+      // translate, just a pass-through call.
+      const conflict = new Error("Payment already exists for order 1");
+      paymentRepository.createPayment.mockRejectedValue(conflict);
 
-      await expect(paymentService.pay(pendingOrder, "card")).rejects.toMatchObject({
-        status: 409,
-        error: "CONFLICT",
-      });
-    });
-
-    it("rethrows unrelated repository errors unchanged", async () => {
-      const unexpected = new Error("connection lost");
-      paymentRepository.createPayment.mockRejectedValue(unexpected);
-
-      await expect(paymentService.pay(pendingOrder, "card")).rejects.toBe(unexpected);
+      await expect(paymentService.pay(pendingOrder, "card")).rejects.toBe(conflict);
     });
   });
 

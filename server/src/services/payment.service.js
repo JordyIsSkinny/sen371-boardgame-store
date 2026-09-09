@@ -7,6 +7,10 @@ import ConflictError from "../errors/conflict-error.js";
 // is allowed to see. This service only owns the payment-specific rules:
 // status transition and duplicate-payment translation. It never reads an
 // amount off the request; the repository derives it from the order.
+//
+// The repository throws ConflictError directly for a duplicate payment, so
+// there's nothing to translate here anymore, just the status-transition
+// check and a pass-through call.
 export async function pay(order, method) {
   if (order.status !== "pending") {
     throw new ConflictError(
@@ -14,14 +18,7 @@ export async function pay(order, method) {
     );
   }
 
-  try {
-    return await paymentRepository.createPayment({ orderId: order.id, method });
-  } catch (err) {
-    if (err.message.includes("already exists")) {
-      throw new ConflictError("A payment already exists for this order.");
-    }
-    throw err;
-  }
+  return paymentRepository.createPayment({ orderId: order.id, method });
 }
 
 export async function getPaymentForOrder(orderId) {
