@@ -5,3 +5,12 @@ export async function getAllCategories() {
     orderBy: { name: 'asc' },
   });
 }
+
+export async function createCategory(data) {
+  return prisma.category.create({
+    data: {
+      name: data.name,
+      slug: data.slug,
+    },
+  });
+}

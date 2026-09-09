@@ -90,6 +90,9 @@ export function hasOnlyAllowedFields(object, allowedFields) {
 export function isValidEnum(value, allowedValues) {
   return allowedValues.includes(value);
 }
+export function isValidEmail(value) {
+  return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 export const productIdSchema = (params) => {
   const errors = [];
 
@@ -464,9 +467,7 @@ export const orderIdSchema = (params) => {
 
   return errors;
 };
-export function isValidEmail(value) {
-  return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
+
 export const userIdSchema = (params) => {
   const errors = [];
 
@@ -479,6 +480,7 @@ export const userIdSchema = (params) => {
 
   return errors;
 };
+
 export const updateUserSchema = (body) => {
   const errors = [];
   const allowedFields = ["firstName", "lastName", "email"];
@@ -514,6 +516,7 @@ export const updateUserSchema = (body) => {
 
   return errors;
 };
+
 export const updateInventorySchema = (body) => {
   const errors = [];
 
@@ -540,6 +543,7 @@ export const updateInventorySchema = (body) => {
 
   return errors;
 };
+
 export const productIdParamSchema = (params) => {
   const errors = [];
 
@@ -552,6 +556,7 @@ export const productIdParamSchema = (params) => {
 
   return errors;
 };
+
 export const createPaymentSchema = (body) => {
   const errors = [];
 
@@ -571,6 +576,7 @@ export const createPaymentSchema = (body) => {
 
   return errors;
 };
+
 export const orderIdParamSchema = (params) => {
   const errors = [];
 
@@ -578,6 +584,26 @@ export const orderIdParamSchema = (params) => {
     errors.push({
       field: "orderId",
       message: "Order ID must be a positive integer.",
+    });
+  }
+
+  return errors;
+};
+
+export const createCategorySchema = (body) => {
+  const errors = [];
+
+  if (!isNonEmptyString(body.name)) {
+    errors.push({
+      field: "name",
+      message: "Name must be a non-empty string.",
+    });
+  }
+
+  if (!isNonEmptyString(body.slug)) {
+    errors.push({
+      field: "slug",
+      message: "Slug must be a non-empty string.",
     });
   }
 
