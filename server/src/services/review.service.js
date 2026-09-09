@@ -15,15 +15,22 @@ import ValidationError from '../errors/validation-error.js';
 import NotFoundError from '../errors/not-found-error.js';
 import ForbiddenError from '../errors/forbidden-error.js';
 
-export async function listProductReviews(productId) {
+export async function listProductReviews(
+  productId,
+  { page = 1, pageSize = 10 } = {},
+) {
   const product = await getProductById(productId);
 
   if (!product) {
     throw new NotFoundError('Product not found.');
   }
 
-  return getReviewsByProduct(productId);
+  return getReviewsByProduct(productId, {
+    page,
+    pageSize,
+  });
 }
+
 export async function submitReview(userId, productId, rating, comment) {
   const product = await getProductById(productId);
 

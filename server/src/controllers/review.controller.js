@@ -8,10 +8,27 @@ import {
 export async function getProductReviews(req, res, next) {
   try {
     const productId = Number(req.params.productId);
+    const {
+      page = 1,
+      pageSize = 10,
+    } = req.query;
 
-    const reviews = await listProductReviews(productId);
+    const result = await listProductReviews(productId, {
+      page,
+      pageSize,
+    });
 
-    res.status(200).json(reviews);
+    const totalPages = Math.ceil(result.total / result.pageSize);
+
+    res.status(200).json({
+      data: result.items,
+      meta: {
+        page: result.page,
+        limit: result.pageSize,
+        total: result.total,
+        totalPages,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -30,7 +47,7 @@ export async function createReview(req, res, next) {
       comment
     );
 
-    res.status(201).json(review);
+    res.status(201).json({ data: review });
   } catch (error) {
     next(error);
   }
@@ -53,7 +70,7 @@ export async function updateReview(req, res, next) {
       }
     );
 
-    res.status(200).json(review);
+    res.status(200).json({ data: review });
   } catch (error) {
     next(error);
   }

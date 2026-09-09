@@ -17,6 +17,9 @@ let otherAccessToken;
 let adminAccessToken;
 
 beforeAll(async () => {
+process.env.JWT_SECRET = 'test-jwt-secret';
+process.env.REFRESH_TOKEN_SECRET = 'test-refresh-secret';
+process.env.CLIENT_ORIGIN = 'http://localhost:5173';
 
   const [
     { createApp },
@@ -219,16 +222,21 @@ describe('Review routes', () => {
       const response = await request(app)
         .get(`/api/v1/products/${testProduct.id}/reviews`);
 
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: testReview.id,
-            productId: testProduct.id,
-            rating: 4,
-          }),
-        ])
-      );
+     expect(response.body).toEqual({
+  data: expect.arrayContaining([
+    expect.objectContaining({
+      id: testReview.id,
+      productId: testProduct.id,
+      rating: 4,
+    }),
+  ]),
+  meta: {
+    page: 1,
+    limit: 10,
+    total: 1,
+    totalPages: 1,
+  },
+    });
     });
   });
 
@@ -296,15 +304,17 @@ describe('Review routes', () => {
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
-        userId: testUser.id,
-        productId: newProduct.id,
-        rating: 5,
-        comment: 'Excellent game!',
-      });
+  data: {
+    userId: testUser.id,
+    productId: newProduct.id,
+    rating: 5,
+    comment: 'Excellent game!',
+  },
+});
 
       await prisma.review.delete({
         where: {
-          id: response.body.id,
+          id: response.body.data.id,
         },
       });
 
@@ -346,11 +356,15 @@ describe('Review routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
-        id: testReview.id,
-        userId: testUser.id,
-        rating: 5,
-        comment: 'Updated through the API.',
-      });
+  data: {
+    id: testReview.id,
+    userId: testUser.id,
+    rating: 5,
+    comment: 'Updated through the API.',
+  },
+});
+
+
     });
 
     it('allows an admin to update another user’s review', async () => {
@@ -364,11 +378,14 @@ describe('Review routes', () => {
 
   expect(response.status).toBe(200);
   expect(response.body).toMatchObject({
+  data: {
     id: testReview.id,
     userId: testUser.id,
     rating: 3,
     comment: 'Updated by admin.',
-   });
+  },
+});
+
  });
 
     it('rejects another user from updating the review', async () => {

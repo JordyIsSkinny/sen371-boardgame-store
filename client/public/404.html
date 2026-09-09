@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Board Game Store</title>
+    <script>
+      // GitHub Pages has no server-side router: any deep link that isn't a
+      // real static file (e.g. /sen371-boardgame-store/products/12) lands
+      // here. Stash the full path and bounce to the SPA's index; main.jsx
+      // restores it (with the /sen371-boardgame-store/ base intact) before
+      // the router mounts, so BrowserRouter's basename matching sees the
+      // same URL a normal deep link would have produced.
+      sessionStorage.setItem(
+        "spa-redirect-path",
+        location.pathname + location.search + location.hash,
+      );
+      location.replace("/sen371-boardgame-store/");
+    </script>
+  </head>
+  <body></body>
+</html>
