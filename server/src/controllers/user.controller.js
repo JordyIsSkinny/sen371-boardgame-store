@@ -20,8 +20,19 @@ export async function updateMe(req, res, next) {
 
 export async function listUsers(req, res, next) {
   try {
-    const users = await userService.listUsers();
-    res.json({ data: users });
+    const { page = 1, pageSize = 20 } = req.query;
+    const result = await userService.listUsers({ page, pageSize });
+    const totalPages = Math.ceil(result.total / result.pageSize);
+
+    res.json({
+      data: result.items,
+      meta: {
+        page: result.page,
+        limit: result.pageSize,
+        total: result.total,
+        totalPages,
+      },
+    });
   } catch (err) {
     next(err);
   }

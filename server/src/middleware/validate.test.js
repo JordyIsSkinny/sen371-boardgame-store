@@ -4,6 +4,7 @@ import {
   productIdSchema,
   createProductSchema,
   productQuerySchema,
+  userQuerySchema,
 } from "./validate.js";
 
 describe("validate middleware", () => {
@@ -155,6 +156,26 @@ describe("validate middleware", () => {
       ]),
     );
   });
-  
+    it("rejects invalid user query parameters", () => {
+    const errors = userQuerySchema({ page: "0", pageSize: "-5" });
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        {
+          field: "page",
+          message: "Page must be a positive integer.",
+        },
+        {
+          field: "pageSize",
+          message: "Page size must be a positive integer.",
+        },
+      ]),
+    );
+  });
+    it("accepts a request with no page/pageSize supplied", () => {
+    const errors = userQuerySchema({});
+
+    expect(errors).toEqual([]);
+  });
 
 });

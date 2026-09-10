@@ -29,12 +29,30 @@ export async function getUserById(id) {
   return toPublicUser(user);
 }
 
-export async function getAllUsers() {
-  const users = await prisma.user.findMany({
-    select: PUBLIC_USER_FIELDS,
-    orderBy: { createdAt: 'desc' },
-  });
-  return users.map(toPublicUser);
+// Paginated, matching the { items, total, page, pageSize } shape
+// product.repository.js's filterProducts already returns, so the
+// controller can build the same { data, meta } envelope every other list
+// endpoint uses.
+export async function getAllUsers({ page = 1, pageSize = 20 } = {}) {
+  const skip = (Number(page) - 1) * Number(pageSize);
+  const take = Number(pageSize);
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      select: PUBLIC_USER_FIELDS,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+    prisma.user.count(),
+  ]);
+
+  return {
+    items: users.map(toPublicUser),
+    total,
+    page: Number(page),
+    pageSize: Number(pageSize),
+  };
 }
 
 export async function updateUser(id, data) {
