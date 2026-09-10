@@ -1,9 +1,20 @@
 import { prisma } from '../lib/prismaClient.js';
 
 export async function getProductById(id) {
-  return prisma.product.findUnique({
+  const product = await prisma.product.findUnique({
     where: { id },
+    include: {
+      categories: { include: { category: true } },
+      inventory: true,
+    },
   });
+  if (!product) return null;
+
+  // Flatten the categories join table the same way filterProducts does —
+  // the detail page needs a category name, not a { productId, categoryId }
+  // pivot row.
+  const { categories, ...rest } = product;
+  return { ...rest, categories: categories.map((pc) => pc.category) };
 }
 
 export async function getAllProducts() {
