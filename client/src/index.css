@@ -22,22 +22,22 @@
   --color-primary-800: #252141;
   --color-primary-900: #1b1830;
 
-  /* Neutral — not yet confirmed against Figma (it isn't in the export
-   * yet); see docs/design-system.md. */
-  --color-neutral-50: #f7f5f1;
-  --color-neutral-100: #e3ddd5;
-  --color-neutral-200: #ccc4bb;
-  --color-neutral-300: #b4aaa3;
-  --color-neutral-400: #9a918c;
-  --color-neutral-500: #7f7976;
-  --color-neutral-600: #646261;
-  --color-neutral-700: #4b4a4a;
-  --color-neutral-800: #323232;
+  /* Neutral — see docs/design-system.md for which stops are given vs
+   * generated. */
+  --color-neutral-100: #f7f5f1;
+  --color-neutral-200: #e1ddd4;
+  --color-neutral-300: #c7c4bc;
+  --color-neutral-400: #aba79e;
+  --color-neutral-500: #8e8a80;
+  --color-neutral-600: #726e64;
+  --color-neutral-700: #54514a;
+  --color-neutral-800: #363433;
   --color-neutral-900: #1a1a1a;
 
   /* Accent amber. One value, not a scale — surface colour only
    * (button/badge backgrounds), never small text on white: fails WCAG AA
-   * at that size. Enforced by convention, not CSS. */
+   * at that size (confirmed in Figma: 2.1:1). Enforced by convention, not
+   * CSS. */
   --color-accent: #e8a33d;
 
   /* Headings Bricolage Grotesque, body Inter. Loaded via Google Fonts in
