@@ -8,12 +8,14 @@ export function Input({ state = "default", type = "text", className = "", ...pro
 
   return (
     <input
+      {...props}
       type={type}
       disabled={disabled}
-      className={`h-11 w-full rounded-input border bg-white px-3 font-body text-small text-neutral-900 outline-none transition placeholder:text-neutral-500 focus:border-2 focus:border-primary-500 ${
-        error ? "border-error" : "border-neutral-300"
+      className={`h-11 w-full rounded-input border bg-white px-3 font-body text-small text-neutral-900 outline-none transition placeholder:text-neutral-500 ${
+        error
+          ? "border-error focus:border-2 focus:border-error"
+          : "border-neutral-300 focus:border-2 focus:border-primary-500"
       } ${disabled ? "opacity-50" : ""} ${className}`}
-      {...props}
     />
   );
 }
