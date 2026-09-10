@@ -157,7 +157,8 @@ export function Register() {
           >
             Register
           </button>
-            <p className="text-center font-body text-small text-neutral-600">
+
+          <p className="text-center font-body text-small text-neutral-600">
             Already have an account?{" "}
             <Link
               to="/login"

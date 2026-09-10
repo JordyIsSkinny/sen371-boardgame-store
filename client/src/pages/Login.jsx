@@ -93,22 +93,15 @@ export function Login() {
           >
             Log in
           </button>
-
-          <Link
-            to="/forgot-password"
-            className="text-center font-body text-small text-primary-600 underline underline-offset-2 hover:text-primary-900"
-          >
-            Forgot password?
-          </Link>
           <p className="text-center font-body text-small text-neutral-600">
-             No account?{" "}
-              <Link
+            No account?{" "}
+            <Link
               to="/register"
               className="font-medium text-primary-600 underline underline-offset-2 hover:text-primary-900"
-               >
-                Register
-                </Link>
-                </p>
+            >
+              Register
+            </Link>
+          </p>
         </form>
       </div>
     </section>
