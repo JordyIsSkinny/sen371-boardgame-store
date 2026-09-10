@@ -609,3 +609,22 @@ export const createCategorySchema = (body) => {
 
   return errors;
 };
+export const userQuerySchema = (query) => {
+  const errors = [];
+
+  if (query.page !== undefined && !isPositiveInteger(query.page)) {
+    errors.push({
+      field: "page",
+      message: "Page must be a positive integer.",
+    });
+  }
+
+  if (query.pageSize !== undefined && !isPositiveInteger(query.pageSize)) {
+    errors.push({
+      field: "pageSize",
+      message: "Page size must be a positive integer.",
+    });
+  }
+
+  return errors;
+};
