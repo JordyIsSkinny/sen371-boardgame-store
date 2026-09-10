@@ -157,6 +157,15 @@ export function Register() {
           >
             Register
           </button>
+            <p className="text-center font-body text-small text-neutral-600">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-medium text-primary-600 underline underline-offset-2 hover:text-primary-900"
+            >
+              Log in
+            </Link>
+          </p>
         </form>
       </div>
     </section>
