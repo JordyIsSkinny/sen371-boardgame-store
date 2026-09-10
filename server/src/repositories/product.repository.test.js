@@ -42,6 +42,56 @@ describe('getProductById', () => {
     const result = await getProductById(999999);
     expect(result).toBeNull();
   });
+
+  it('returns an empty categories array and null inventory when neither exist', async () => {
+    const result = await getProductById(testProduct.id);
+    expect(result.categories).toEqual([]);
+    expect(result.inventory).toBeNull();
+  });
+});
+
+describe('getProductById with related data', () => {
+  let category;
+  let categorizedProduct;
+
+  beforeAll(async () => {
+    category = await prisma.category.create({
+      data: { name: `Detail Test ${Date.now()}`, slug: `detail-test-${Date.now()}` },
+    });
+    categorizedProduct = await prisma.product.create({
+      data: {
+        title: 'Catan',
+        slug: `catan-test-${Date.now()}`,
+        minPlayers: 3,
+        maxPlayers: 4,
+        playTimeMinutes: 90,
+        minAge: 10,
+        complexityRating: 2.3,
+        price: 650,
+        categories: { create: { categoryId: category.id } },
+        inventory: { create: { quantityOnHand: 12 } },
+      },
+    });
+    createdIds.push(categorizedProduct.id);
+  });
+
+  afterAll(async () => {
+    await prisma.productCategory.deleteMany({ where: { productId: categorizedProduct.id } });
+    await prisma.inventory.deleteMany({ where: { productId: categorizedProduct.id } });
+    await prisma.category.delete({ where: { id: category.id } });
+  });
+
+  it('flattens the category join table into plain category objects', async () => {
+    const result = await getProductById(categorizedProduct.id);
+    expect(result.categories).toEqual([
+      expect.objectContaining({ id: category.id, name: category.name }),
+    ]);
+  });
+
+  it('includes inventory stock data', async () => {
+    const result = await getProductById(categorizedProduct.id);
+    expect(result.inventory).toEqual(expect.objectContaining({ quantityOnHand: 12 }));
+  });
 });
 
 describe('getAllProducts', () => {
