@@ -78,7 +78,9 @@ const POLICY = [
   // Categories management — admin only
   { method: 'post', path: '/categories', requires: ADMIN },
 
-  // Health check — reachable without a token is the only sane default for
+  // Admin order management
+  { method: 'get', path: '/orders/all', requires: ADMIN },
+  { method: 'put', path: '/orders/:id/status', requires: ADMIN },
   // an uptime probe. Team-confirmed (Miles agreed on PR #83), not defaulted
   // into silently.
   { method: 'get', path: '/health', requires: PUBLIC },
