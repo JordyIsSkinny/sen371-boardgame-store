@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '../lib/prismaClient.js';
 import {
+  getTotalReviewCount,
   getReviewsByProduct,
   getReviewById,
   createReview,
@@ -188,6 +189,14 @@ describe('createReview', () => {
     expect(testReview.productId).toBe(testProduct.id);
     expect(testReview.rating).toBe(5);
     expect(testReview.comment).toBe('Excellent game!');
+  });
+});
+
+describe('getTotalReviewCount', () => {
+  it('returns a count that includes the test review', async () => {
+    const total = await getTotalReviewCount();
+
+    expect(total).toBeGreaterThanOrEqual(1);
   });
 });
 

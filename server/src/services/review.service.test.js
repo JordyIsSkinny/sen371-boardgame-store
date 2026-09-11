@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '../lib/prismaClient.js';
 
 import {
+  countReviews,
   listProductReviews,
   submitReview,
   editReview,
@@ -177,6 +178,14 @@ afterAll(async () => {
       },
     });
   }
+});
+
+describe('countReviews', () => {
+  it('returns a count that includes the test review', async () => {
+    const total = await countReviews();
+
+    expect(total).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe('listProductReviews', () => {

@@ -1,5 +1,9 @@
 import { prisma } from '../lib/prismaClient.js';
 
+export async function getTotalReviewCount() {
+  return prisma.review.count();
+}
+
 export async function getReviewsByProduct(
   productId,
   { page = 1, pageSize = 10 } = {},
