@@ -7,7 +7,11 @@ const currency = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "
 // is real CSS (`hover:`), not a prop, same reasoning as Button. `status` is
 // passed straight through to StockBadge rather than re-deriving it, since
 // Figma's own reference duplicated StockBadge's markup inline instead of
-// reusing the component — reuse is more correct here.
+// reusing the component — reuse is more correct here. Deliberately never
+// passes a count into StockBadge — every ProductCard instance in Figma
+// (S1/S2's grids, S3's related-products row) shows a plain "In stock", not
+// "In stock · N available"; that richer text is Product Detail's own
+// page-level badge only. See StockBadge's own comment.
 //
 // Figma's cover art was a placeholder ellipse graphic, not a real asset;
 // replaced with an `imageUrl` prop + solid-colour fallback so this renders
@@ -24,7 +28,6 @@ export function ProductCard({
   rating,
   reviewCount,
   status = "in-stock",
-  stockCount,
   className = "",
 }) {
   const outOfStock = status === "out-of-stock";
@@ -54,7 +57,7 @@ export function ProductCard({
           <span className="font-heading text-h4 font-semibold text-neutral-900">
             {price != null && currency.format(Number(price))}
           </span>
-          <StockBadge status={status} count={stockCount} />
+          <StockBadge status={status} />
         </div>
       </div>
     </Link>

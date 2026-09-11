@@ -2,15 +2,27 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiClient } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { Button } from "../components/Button.jsx";
+import { StockBadge } from "../components/StockBadge.jsx";
+import { ProductCard } from "../components/ProductCard.jsx";
 
 // S3 Product Detail (issue #69). Rebuilt against the real Figma frame
 // (node 84:117) rather than the low-fi wireframe it was first built from —
-// see PR #107 for the before/after. A few things the design shows that the
-// schema can't back are deliberately left out rather than faked, tracked in
-// #111: mechanics chips (Product has no mechanics field, same gap as
-// Catalogue's filter), a Year attribute (no column for it), and the three
-// image thumbnails under the main photo (Product has one imageUrl, not a
-// gallery) — the main image is shown alone instead.
+// see PR #107 for the before/after — and re-skinned onto the shared
+// component library (#110) per #108: Button, StockBadge and ProductCard
+// replace hand-rolled markup that used to live in this file (the
+// RelatedCard helper and the inline "Add to Cart" button are both gone).
+//
+// No shared Tabs, Select, or Textarea component exists in the library, so
+// the Description/Specifications/Reviews tabs, the quantity stepper, and
+// the review form all keep their existing hand-styled markup.
+//
+// A few things the design shows that the schema can't back are
+// deliberately left out rather than faked, tracked in #111: mechanics
+// chips (Product has no mechanics field, same gap as Catalogue's filter),
+// a Year attribute (no column for it), and the three image thumbnails
+// under the main photo (Product has one imageUrl, not a gallery) — the
+// main image is shown alone instead.
 //
 // "Add to Cart" posts straight to POST /cart/items via apiClient, the same
 // direct-call pattern Catalogue (S2) uses — there's no CartContext yet
@@ -33,10 +45,11 @@ function formatStats(product) {
   return `${players} players · ${product.playTimeMinutes} min · Ages ${product.minAge}+ · Complexity ${Number(product.complexityRating).toFixed(1)}`;
 }
 
-function stockLabel(stock) {
-  if (stock <= 0) return "Out of stock";
-  if (stock <= 5) return `Low stock · ${stock} left`;
-  return `In stock · ${stock} available`;
+// Matches Catalogue.jsx's own threshold — see that file's comment.
+function stockStatus(quantityOnHand) {
+  if (quantityOnHand <= 0) return "out-of-stock";
+  if (quantityOnHand <= 5) return "low-stock";
+  return "in-stock";
 }
 
 function Stars({ value }) {
@@ -46,41 +59,6 @@ function Stars({ value }) {
       {"★ ".repeat(rounded)}
       <span className="text-neutral-300">{"☆ ".repeat(5 - rounded)}</span>
     </span>
-  );
-}
-
-function RelatedCard({ product }) {
-  const stock = product.inventory?.quantityOnHand ?? 0;
-  return (
-    <Link
-      to={`/products/${product.id}`}
-      className="flex flex-col overflow-hidden rounded-modal border border-neutral-200 bg-white transition hover:border-primary-300 hover:shadow-lg"
-    >
-      <div className="aspect-square w-full bg-primary-300">
-        {product.imageUrl && (
-          <img src={product.imageUrl} alt={product.title} className="h-full w-full object-cover" />
-        )}
-      </div>
-      <div className="flex flex-col gap-1.5 px-4 pb-4 pt-3.5">
-        <h3 className="font-heading text-body-lg font-medium text-neutral-900">{product.title}</h3>
-        {product.categories?.[0] && (
-          <p className="text-small text-neutral-500">{product.categories[0].name}</p>
-        )}
-        <p className="text-caption text-neutral-700">{formatStats(product)}</p>
-        <div className="flex items-center justify-between pt-1.5">
-          <span className="font-heading text-h4 font-semibold text-neutral-900">
-            {currency.format(Number(product.price))}
-          </span>
-          <span
-            className={`rounded-pill px-2.5 py-0.5 text-xs font-medium ${
-              stock > 0 ? "bg-primary-100 text-primary-900" : "bg-neutral-100 text-neutral-500"
-            }`}
-          >
-            {stock > 0 ? "In Stock" : "Out of Stock"}
-          </span>
-        </div>
-      </div>
-    </Link>
   );
 }
 
@@ -271,13 +249,9 @@ export function ProductDetail() {
 
           <p className="mt-4 font-heading text-h2 text-neutral-900">{currency.format(Number(product.price))}</p>
 
-          <span
-            className={`mt-2 inline-block rounded-pill px-2.5 py-1 text-xs font-medium ${
-              inStock ? "bg-primary-100 text-primary-900" : "bg-neutral-100 text-neutral-500"
-            }`}
-          >
-            {stockLabel(stock)}
-          </span>
+          <div className="mt-2">
+            <StockBadge status={stockStatus(stock)} count={stock} />
+          </div>
 
           <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 rounded-modal border border-neutral-200 bg-white p-4 text-small sm:grid-cols-4">
             <div>
@@ -338,14 +312,13 @@ export function ProductDetail() {
                     +
                   </button>
                 </div>
-                <button
-                  type="button"
+                <Button
                   onClick={handleAddToCart}
-                  disabled={!inStock || cartStatus === "submitting"}
-                  className="h-12 flex-1 rounded-card bg-primary-500 px-5 text-small font-medium text-white transition hover:bg-primary-700 disabled:opacity-60 sm:max-w-[280px]"
+                  state={!inStock || cartStatus === "submitting" ? "disabled" : "default"}
+                  className="flex-1 sm:max-w-[280px]"
                 >
                   {cartStatus === "added" ? "Added" : cartStatus === "submitting" ? "Adding…" : "Add to cart"}
-                </button>
+                </Button>
               </>
             ) : (
               <Link
@@ -477,7 +450,16 @@ export function ProductDetail() {
           <h2 className="font-heading text-h3 text-primary-900">You might also like</h2>
           <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {related.map((p) => (
-              <RelatedCard key={p.id} product={p} />
+              <ProductCard
+                key={p.id}
+                id={p.id}
+                title={p.title}
+                category={p.categories?.[0]?.name}
+                stats={formatStats(p)}
+                price={p.price}
+                imageUrl={p.imageUrl}
+                status={stockStatus(p.inventory?.quantityOnHand ?? 0)}
+              />
             ))}
           </div>
         </div>

@@ -1,16 +1,28 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "../api/client.js";
+import { Checkbox } from "../components/Checkbox.jsx";
+import { FilterChip } from "../components/FilterChip.jsx";
+import { ProductCard } from "../components/ProductCard.jsx";
 
 // S2 Catalogue (issue #68). Rebuilt against the real Figma frame (node
 // 73:8) rather than the low-fi wireframe this was first built from — see
-// PR #100 for the before/after. One correction along the way: this file
-// used to render a Mechanics filter group with a comment claiming "the
-// design system calls for it." That wasn't true — checked against the
-// live file and the real S2 sidebar has exactly seven filter groups
-// (Category, Player count, Playtime, Age rating, Complexity, Price, In
-// stock only), no Mechanics group at all. Removed rather than kept as a
-// guess. Product has no mechanics field either way, so it was never
-// wireable regardless of the design question.
+// PR #100 for the before/after — and re-skinned onto the shared component
+// library (#110) per #108: Checkbox, FilterChip and ProductCard replace
+// the hand-rolled versions that used to live in this file. One correction
+// along the way, back when this was first rebuilt: a comment here used to
+// claim a Mechanics filter group was "rendered because the design system
+// calls for it." That wasn't true — the real S2 sidebar has exactly seven
+// filter groups (Category, Player count, Playtime, Age rating, Complexity,
+// Price, In stock only), no Mechanics group at all. Removed rather than
+// kept as a guess. Product has no mechanics field either way, so it was
+// never wireable regardless of the design question.
+//
+// Not everything in the sidebar has a shared component to re-skin onto —
+// there's no Select/Range/Toggle component in the library (only the seven
+// named in #108/#110), so Player count, Age rating, Sort, Complexity,
+// Price and In-stock-only all keep their existing hand-styled markup.
+// "Clear all" also stays plain text rather than becoming a Button — Figma
+// renders it as plain text too (node 73:29), not a Button instance.
 //
 // The filter sidebar, sort control, and pagination below are fully
 // interactive as local UI state — the currency, so to speak, changes hands
@@ -26,13 +38,6 @@ import { apiClient } from "../api/client.js";
 // would be worse than not showing it. Sort also has no Rating option
 // (Figma defaults to "Sort: Rating") for the same reason: nothing computes
 // one server-side yet.
-//
-// StockBadge colours are also a deliberate, known mismatch: Figma uses
-// green/gray (success/neutral) tints for in-stock/out-of-stock, but those
-// tokens only exist on the shared-component-library branch (#110, not yet
-// merged) — using them here would couple this PR to that one. Kept the
-// existing primary/neutral pill colours instead; #108 reconciles this once
-// #110 lands.
 
 const PLAYTIME_BUCKETS = [
   { label: "Under 30 min", max: 30 },
@@ -51,34 +56,13 @@ function formatStats(product) {
   return `${players} · ${product.playTimeMinutes}m · ${product.minAge}+ · ${Number(product.complexityRating).toFixed(1)}`;
 }
 
-function Checkbox({ checked, onChange, children }) {
-  return (
-    <label className="flex items-center gap-2 text-sm text-neutral-700">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="h-4 w-4 rounded border-neutral-300 text-primary-600 accent-primary-600"
-      />
-      {children}
-    </label>
-  );
-}
-
-function Chip({ children, onRemove }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-100 px-3 py-1 text-sm text-primary-900">
-      {children}
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Remove ${children} filter`}
-        className="text-primary-600 hover:text-primary-900"
-      >
-        &times;
-      </button>
-    </span>
-  );
+// Matches ProductDetail.jsx's own threshold — kept as a small page-local
+// helper rather than a shared util, same call as formatStats above (this
+// file and ProductDetail.jsx have duplicated that one for a while now).
+function stockStatus(quantityOnHand) {
+  if (quantityOnHand <= 0) return "out-of-stock";
+  if (quantityOnHand <= 5) return "low-stock";
+  return "in-stock";
 }
 
 export function Catalogue() {
@@ -225,7 +209,7 @@ export function Catalogue() {
         <aside className="w-full shrink-0 lg:w-64">
           <div className="flex items-center justify-between">
             <h2 className="text-h4 font-heading text-primary-900">Filters</h2>
-            <button type="button" onClick={clearAll} className="text-sm text-primary-600 hover:underline">
+            <button type="button" onClick={clearAll} className="text-sm text-primary-500 hover:underline">
               Clear All
             </button>
           </div>
@@ -235,13 +219,13 @@ export function Catalogue() {
               <legend className="text-sm font-semibold text-neutral-800">Category</legend>
               <div className="mt-2 flex flex-col gap-1.5">
                 {categories.map((category) => (
-                  <Checkbox
-                    key={category.id}
-                    checked={selectedCategories.includes(category.name)}
-                    onChange={() => toggleCategory(category.name)}
-                  >
+                  <label key={category.id} className="flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
+                    <Checkbox
+                      checked={selectedCategories.includes(category.name)}
+                      onChange={() => toggleCategory(category.name)}
+                    />
                     {category.name}
-                  </Checkbox>
+                  </label>
                 ))}
               </div>
             </fieldset>
@@ -269,13 +253,13 @@ export function Catalogue() {
               <legend className="text-sm font-semibold text-neutral-800">Playtime</legend>
               <div className="mt-2 flex flex-col gap-1.5">
                 {PLAYTIME_BUCKETS.map((bucket) => (
-                  <Checkbox
-                    key={bucket.label}
-                    checked={selectedPlaytime.includes(bucket.label)}
-                    onChange={() => togglePlaytime(bucket.label)}
-                  >
+                  <label key={bucket.label} className="flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
+                    <Checkbox
+                      checked={selectedPlaytime.includes(bucket.label)}
+                      onChange={() => togglePlaytime(bucket.label)}
+                    />
                     {bucket.label}
-                  </Checkbox>
+                  </label>
                 ))}
               </div>
             </fieldset>
@@ -352,9 +336,9 @@ export function Catalogue() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
               {activeChips.map((chip) => (
-                <Chip key={chip.key} onRemove={chip.onRemove}>
+                <FilterChip key={chip.key} onRemove={chip.onRemove}>
                   {chip.label}
-                </Chip>
+                </FilterChip>
               ))}
               {activeChips.length === 0 && (
                 <span className="text-sm text-neutral-500">No filters applied</span>
@@ -393,42 +377,18 @@ export function Catalogue() {
 
           {status === "ready" && products.length > 0 && (
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-              {products.map((product) => {
-                const inStock = (product.inventory?.quantityOnHand ?? 0) > 0;
-                return (
-                  <article
-                    key={product.id}
-                    className="flex flex-col overflow-hidden rounded-card border border-neutral-200 bg-white"
-                  >
-                    <div className="aspect-square w-full bg-neutral-100">
-                      {product.imageUrl && (
-                        <img
-                          src={product.imageUrl}
-                          alt={product.title}
-                          className="h-full w-full object-cover"
-                        />
-                      )}
-                    </div>
-                    <div className="flex flex-1 flex-col gap-1 p-3">
-                      <h3 className="font-heading text-h4 text-primary-900">{product.title}</h3>
-                      {product.categories[0] && (
-                        <p className="text-sm text-neutral-500">{product.categories[0].name}</p>
-                      )}
-                      <p className="text-small text-neutral-600">{formatStats(product)}</p>
-                      <div className="mt-auto flex items-center justify-between pt-2">
-                        <span className="font-semibold text-primary-900">{currency.format(Number(product.price))}</span>
-                        <span
-                          className={`rounded-pill px-2.5 py-0.5 text-xs font-medium ${
-                            inStock ? "bg-primary-100 text-primary-900" : "bg-neutral-100 text-neutral-500"
-                          }`}
-                        >
-                          {inStock ? "In Stock" : "Out of Stock"}
-                        </span>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+              {products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  title={product.title}
+                  category={product.categories[0]?.name}
+                  stats={formatStats(product)}
+                  price={product.price}
+                  imageUrl={product.imageUrl}
+                  status={stockStatus(product.inventory?.quantityOnHand ?? 0)}
+                />
+              ))}
             </div>
           )}
 
