@@ -79,13 +79,14 @@ amber surface passes comfortably (~8:1).
 | `success` | `#2E7D5B` | given |
 | `warning` | `#C77A20` | given |
 | `error` | `#C0392B` | given |
+| `info` | `#2C6E9B` | given |
 
-All three are real bound Figma variables (`get_variable_defs`), not
+All four are real bound Figma variables (`get_variable_defs`), not
 literals — confirmed on Input's error-state border, StockBadge's in-stock
-and low-stock text, and ProductCard's in-stock badge. There is no `info`
-variable anywhere in the current component set (checked across every
-component below plus NavBar); it's intentionally not defined here rather
-than guessed — add it only once a real component actually binds one.
+and low-stock text, ProductCard's in-stock badge, and (for `info`) S8
+Order History's "Shipped" status badge (node 138:474) — the first real use
+of `info` anywhere in the file; it was genuinely unused when this doc was
+first written, not an oversight at the time.
 
 Note StockBadge's out-of-stock state does **not** use `error` — it uses
 `neutral-700`. Out of stock isn't a fault state in this design, so don't
@@ -97,16 +98,18 @@ assume `error` is the right token for it.
 |---|---|---|
 | `success-tint` | `#E5F0EC` | generated |
 | `warning-tint` | `#F8EEDF` | generated |
+| `info-tint` | `#E0EAF2` | generated |
 | `neutral-tint` | `#E7E5E1` | generated |
 
 These are StockBadge's pill background colours (in-stock / low-stock /
-out-of-stock respectively). Marked **generated** rather than **given**
-because they aren't Figma variables at all, unlike everything else on this
-page — binding a variable and then setting opacity on it didn't hold in
-the Figma Plugin API, so the tints ended up as literal hex fills on the
-StockBadge component instead. Read directly off StockBadge (node 66:27)
-via `get_design_context` and named here so nothing downstream has to
-reinvent them from a screenshot.
+out-of-stock respectively), and the same pattern reused for S8's status
+badges (`info-tint` for "Shipped"). Marked **generated** rather than
+**given** because they aren't Figma variables at all, unlike everything
+else on this page — binding a variable and then setting opacity on it
+didn't hold in the Figma Plugin API, so the tints ended up as literal hex
+fills on the components instead. Read directly off StockBadge (node
+66:27) and S8's status badges (node 138:474) via `get_design_context` and
+named here so nothing downstream has to reinvent them from a screenshot.
 
 ## Type
 

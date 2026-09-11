@@ -42,20 +42,22 @@
 
   /* Semantic status colours — bound Figma variables, confirmed via
    * get_variable_defs against Input's error state, StockBadge, and
-   * ProductCard. No `info` variable exists anywhere in the current
-   * component set, so it isn't defined here — add it if a real use shows
-   * up rather than guessing a value now. */
+   * ProductCard. `info` was unused when this was first written — S8
+   * (Order History, node 138:474) is the first real use, for the
+   * "Shipped" status badge. */
   --color-success: #2e7d5b;
   --color-warning: #c77a20;
   --color-error: #c0392b;
+  --color-info: #2c6e9b;
 
   /* StockBadge tint backgrounds. Not Figma variables — binding a variable
    * and setting opacity on it didn't hold in the Figma Plugin API, so
    * these are literal fills in the file (confirmed via get_design_context
-   * on StockBadge, node 66:27). Named here so nothing downstream
-   * reinvents them from a screenshot. */
+   * on StockBadge, node 66:27, and on S8's status badges). Named here so
+   * nothing downstream reinvents them from a screenshot. */
   --color-success-tint: #e5f0ec;
   --color-warning-tint: #f8eedf;
+  --color-info-tint: #e0eaf2;
   --color-neutral-tint: #e7e5e1;
 
   /* Headings Bricolage Grotesque, body Inter. Loaded via Google Fonts in
