@@ -13,6 +13,10 @@ Full-stack e-commerce web application for a single-seller board game retailer, b
 | Testing | Vitest, Supertest, Playwright |
 | Hosting | GitHub Pages (client) · Render (API) · Neon (database) |
 
+## Design
+
+High-fidelity prototype and component library: [Figma](https://www.figma.com/design/9jaB1VepWpkM3Anp6xI4V5/SEN371-%E2%80%93-Board-Game-Store?node-id=65-6&t=wRJR2kw9014NKdgM-1) (view-only). Design tokens are documented in [`docs/design-system.md`](docs/design-system.md) and implemented as Tailwind's `@theme` block in `client/src/index.css` — where the two disagree, Figma is the source of truth.
+
 ## Prerequisites
 
 - Node.js 20 or later
@@ -37,9 +41,14 @@ cd ../client && npm install
 cd ..
 ```
 
-Copy the environment template and fill in your own values:
+Copy the environment template and fill in your own values. It needs to exist
+in **two** places — once at the repo root (Vite reads the client's
+`VITE_API_BASE_URL` from there, not from inside `client/` — see
+`client/vite.config.js`'s `envDir`), and once inside `server/` for the API's
+own vars:
 
 ```bash
+cp .env.example .env
 cp .env.example server/.env
 ```
 
@@ -77,8 +86,11 @@ Health check: `GET http://localhost:3000/api/health`
 
 ```bash
 cd server && npm test        # API unit and integration tests
-cd client && npm test        # component tests
 ```
+
+The client has no automated test runner configured — frontend changes are
+verified manually against a running dev server rather than with component
+tests.
 
 ## Project structure
 
