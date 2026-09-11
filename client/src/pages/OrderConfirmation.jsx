@@ -5,10 +5,11 @@ import { Button } from "../components/Button.jsx";
 import { LoadingState } from "../components/LoadingState.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
 
-// S7 Order Confirmation (issue #77, stretch). Fetches GET /orders/:id and
-// shows the real order the user just placed (or is looking back at) —
-// status, items, and total, rather than a generic "thanks" message with no
-// data behind it.
+// S7 Order Confirmation (issue #77). Fetches GET /orders/:id and shows the
+// real order — status, items, and total. Matches Figma node 137:459 per
+// Masindi's review on PR #121: success icon, "Order placed" heading,
+// confirmation-email line, delivery estimate, item thumbnails, correct
+// button copy/emphasis.
 
 const currency = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 
@@ -56,22 +57,58 @@ export function OrderConfirmation() {
       </nav>
 
       <div className="mt-6 flex flex-col items-center text-center">
-        <h1 className="font-heading text-h2 text-primary-900">Thank you for your order</h1>
+               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success-tint text-success">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-8 w-8"
+            aria-hidden="true"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </div>
+
+        <h1 className="mt-4 font-heading text-h2 text-primary-900">Order placed</h1>
         <p className="mt-2 text-neutral-600">
           Order #{order.id} &middot; {STATUS_LABELS[order.status] ?? order.status}
+        </p>
+        <p className="mt-1 text-sm text-neutral-500">
+          We've sent a confirmation to your email.
+        </p>
+        <p className="mt-1 text-sm text-neutral-500">
+          Estimated delivery: 5&ndash;7 business days.
         </p>
       </div>
 
       <div className="mx-auto mt-8 max-w-lg rounded-card border border-neutral-200 bg-white p-4">
         <h2 className="text-h4 font-heading text-primary-900">Order items</h2>
 
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-4 flex flex-col gap-3">
           {order.items.map((item) => (
-            <div key={item.id} className="flex justify-between text-sm text-neutral-700">
-              <span>
-                {item.productTitle} &times; {item.quantity}
-              </span>
-              <span>{currency.format(Number(item.unitPrice) * item.quantity)}</span>
+            <div key={item.id} className="flex items-center gap-3">
+              {item.imageUrl ? (
+                <img
+                  src={item.imageUrl}
+                  alt=""
+                  className="h-12 w-12 flex-shrink-0 rounded-input object-cover"
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  className="h-12 w-12 flex-shrink-0 rounded-input bg-neutral-100"
+                />
+              )}
+              <div className="flex flex-1 items-center justify-between text-sm text-neutral-700">
+                <span>
+                  {item.productTitle} &times; {item.quantity}
+                </span>
+                <span>{currency.format(Number(item.unitPrice) * item.quantity)}</span>
+              </div>
             </div>
           ))}
         </div>
@@ -94,10 +131,10 @@ export function OrderConfirmation() {
 
       <div className="mt-8 flex justify-center gap-3">
         <Link to="/orders">
-          <Button style="secondary">View order history</Button>
+          <Button style="primary">View my orders</Button>
         </Link>
         <Link to="/catalogue">
-          <Button>Continue shopping</Button>
+          <Button style="secondary">Continue shopping</Button>
         </Link>
       </div>
     </section>
