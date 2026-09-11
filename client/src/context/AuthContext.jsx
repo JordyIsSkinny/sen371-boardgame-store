@@ -6,6 +6,7 @@ import {
   setUnauthorizedHandler,
   refreshAccessToken,
 } from "../api/client.js";
+import { LoadingState } from "../components/LoadingState.jsx";
 
 const AuthContext = createContext(null);
 
@@ -87,7 +88,7 @@ export function ProtectedRoute({ children }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return null;
+  if (isLoading) return <LoadingState message="Checking your session..." />;
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
   return children;
 }
@@ -96,7 +97,7 @@ export function AdminRoute({ children }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return null;
+  if (isLoading) return <LoadingState message="Checking your session..." />;
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
   if (user.role !== "admin") return <Navigate to="/" replace />;
   return children;
