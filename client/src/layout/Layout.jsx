@@ -11,7 +11,7 @@ export function Layout() {
       <header className="border-b border-neutral-200 bg-white">
         <nav className="mx-auto flex max-w-6xl items-center justify-between p-4">
           <NavLink to="/" className="font-heading text-h4 text-primary-900">
-            Board Game Store
+            One More Game
           </NavLink>
           <div className="flex items-center gap-4 text-sm">
             <NavLink to="/catalogue" className={navLinkClass}>
@@ -53,7 +53,7 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="border-t border-neutral-200 p-4 text-center text-sm text-neutral-500">
-        SEN371 Board Game Store
+        SEN371 — One More Game
       </footer>
     </div>
   );

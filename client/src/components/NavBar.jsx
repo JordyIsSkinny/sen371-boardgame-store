@@ -24,7 +24,7 @@ export function NavBar({
     >
       <div className="flex items-center gap-8 whitespace-nowrap">
         <Link to="/" className="font-heading text-h4 font-semibold text-primary-900">
-          Meeple &amp; Co.
+          One More Game
         </Link>
         <NavLink to="/catalogue" className="text-small text-neutral-700">
           Catalogue
