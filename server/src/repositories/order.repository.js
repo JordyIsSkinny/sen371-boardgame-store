@@ -72,3 +72,24 @@ export async function getOrderById(id) {
     include: { items: true },
   });
 }
+
+
+const VALID_STATUSES = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+
+export async function getAllOrders() {
+  return prisma.order.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { items: true },
+  });
+}
+
+export async function updateOrderStatus(id, status) {
+  if (!VALID_STATUSES.includes(status)) {
+    throw new Error(`Invalid order status: ${status}`);
+  }
+
+  return prisma.order.update({
+    where: { id },
+    data: { status },
+  });
+}

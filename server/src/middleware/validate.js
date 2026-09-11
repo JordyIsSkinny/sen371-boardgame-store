@@ -675,3 +675,15 @@ export const userQuerySchema = (query) => {
 
   return errors;
 };
+export const updateOrderStatusSchema = (body) => {
+  const errors = [];
+
+  if (!isValidEnum(body.status, ['pending', 'paid', 'shipped', 'delivered', 'cancelled'])) {
+    errors.push({
+      field: 'status',
+      message: 'Status must be one of: pending, paid, shipped, delivered, cancelled.',
+    });
+  }
+
+  return errors;
+};

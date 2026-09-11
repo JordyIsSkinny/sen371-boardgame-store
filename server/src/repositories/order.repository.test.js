@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '../lib/prismaClient.js';
-import { createOrder, getOrdersByUser, getOrderById } from './order.repository.js';
+import { createOrder, getOrdersByUser, getOrderById, getAllOrders, updateOrderStatus } from './order.repository.js';
 
 let testUser, testRole, testProduct, testAddress;
 
@@ -127,5 +127,51 @@ describe('getOrderById', () => {
   it('returns null for a nonexistent order', async () => {
     const found = await getOrderById(999999);
     expect(found).toBeNull();
+  });
+});
+
+
+describe('getAllOrders', () => {
+  it(
+    'returns orders across users, including the test order',
+    async () => {
+      const order = await createOrder({
+        userId: testUser.id,
+        addressId: testAddress.id,
+        items: [{ productId: testProduct.id, quantity: 1 }],
+      });
+
+      const orders = await getAllOrders();
+      expect(Array.isArray(orders)).toBe(true);
+      expect(orders.some((o) => o.id === order.id)).toBe(true);
+    },
+    15000
+  );
+});
+
+describe('updateOrderStatus', () => {
+  it(
+    'updates the order status',
+    async () => {
+      const order = await createOrder({
+        userId: testUser.id,
+        addressId: testAddress.id,
+        items: [{ productId: testProduct.id, quantity: 1 }],
+      });
+
+      const updated = await updateOrderStatus(order.id, 'shipped');
+      expect(updated.status).toBe('shipped');
+    },
+    15000
+  );
+
+  it('throws for an invalid status value', async () => {
+    const order = await createOrder({
+      userId: testUser.id,
+      addressId: testAddress.id,
+      items: [{ productId: testProduct.id, quantity: 1 }],
+    });
+
+    await expect(updateOrderStatus(order.id, 'not-a-real-status')).rejects.toThrow();
   });
 });

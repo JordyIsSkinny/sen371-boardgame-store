@@ -4,9 +4,17 @@ import {
   validate,
   createOrderSchema,
   orderIdSchema,
+  updateOrderStatusSchema,
 } from '../middleware/validate.js';
+import { authorize } from '../middleware/authorize.js';
 import { requireOwnershipOrAdmin } from '../middleware/require-ownership.js';
-import { createOrder, getOrdersByUser, getOrderById } from '../repositories/order.repository.js';
+import {
+  createOrder,
+  getOrdersByUser,
+  getOrderById,
+  getAllOrders,
+  updateOrderStatus,
+} from '../repositories/order.repository.js';
 
 const router = Router();
 
@@ -28,6 +36,30 @@ router.get('/', authenticate, async (req, res, next) => {
     next(err);
   }
 });
+
+router.get('/all', authenticate, authorize('admin'), async (req, res, next) => {
+  try {
+    const orders = await getAllOrders();
+    res.json({ data: orders });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put(
+  '/:id/status',
+  authenticate,
+  authorize('admin'),
+  validate({ params: orderIdSchema, body: updateOrderStatusSchema }),
+  async (req, res, next) => {
+    try {
+      const order = await updateOrderStatus(Number(req.params.id), req.body.status);
+      res.json({ data: order });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 router.get(
   '/:id',
