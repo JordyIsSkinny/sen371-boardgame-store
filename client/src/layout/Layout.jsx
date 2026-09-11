@@ -1,16 +1,16 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
-const navLinkClass = ({ isActive }) => (isActive ? "font-semibold text-slate-900" : "text-slate-600");
+const navLinkClass = ({ isActive }) => (isActive ? "font-semibold text-primary-900" : "text-neutral-600");
 
 export function Layout() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="flex min-h-screen flex-col bg-neutral-100 text-neutral-900">
+      <header className="border-b border-neutral-200 bg-white">
         <nav className="mx-auto flex max-w-6xl items-center justify-between p-4">
-          <NavLink to="/" className="text-lg font-semibold">
+          <NavLink to="/" className="font-heading text-h4 text-primary-900">
             Board Game Store
           </NavLink>
           <div className="flex items-center gap-4 text-sm">
@@ -33,7 +33,7 @@ export function Layout() {
               </NavLink>
             )}
             {user ? (
-              <button type="button" onClick={logout} className="text-slate-600">
+              <button type="button" onClick={logout} className="text-neutral-600">
                 Log out
               </button>
             ) : (
@@ -52,7 +52,7 @@ export function Layout() {
       <main className="mx-auto w-full max-w-6xl flex-1 p-4">
         <Outlet />
       </main>
-      <footer className="border-t border-slate-200 p-4 text-center text-sm text-slate-500">
+      <footer className="border-t border-neutral-200 p-4 text-center text-sm text-neutral-500">
         SEN371 Board Game Store
       </footer>
     </div>
