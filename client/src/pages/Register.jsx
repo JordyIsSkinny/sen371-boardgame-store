@@ -2,6 +2,28 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
+function validatePassword(password) {
+  const issues = [];
+
+  if (password.length < 8) {
+    issues.push("must be at least 8 characters");
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    issues.push("must contain an uppercase letter");
+  }
+
+  if (!/[a-z]/.test(password)) {
+    issues.push("must contain a lowercase letter");
+  }
+
+  if (!/[0-9]/.test(password)) {
+    issues.push("must contain a digit");
+  }
+
+  return issues;
+}
+
 export function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -16,6 +38,13 @@ export function Register() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
+
+    const passwordIssues = validatePassword(password);
+
+    if (passwordIssues.length > 0) {
+      setError(passwordIssues.join(", "));
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
