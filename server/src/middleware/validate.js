@@ -195,6 +195,20 @@ export const createProductSchema = (body) => {
     });
   }
 
+  if (body.categoryId !== undefined && !isValidId(body.categoryId)) {
+    errors.push({
+      field: "categoryId",
+      message: "Category ID must be a positive integer.",
+    });
+  }
+
+  if (body.quantityOnHand !== undefined && !isNonNegativeInteger(body.quantityOnHand)) {
+    errors.push({
+      field: "quantityOnHand",
+      message: "Quantity on hand must be a non-negative integer.",
+    });
+  }
+
   return errors;
 };
 export const updateProductSchema = (body) => {
