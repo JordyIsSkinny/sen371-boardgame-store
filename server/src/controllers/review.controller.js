@@ -1,9 +1,19 @@
 import {
+  countReviews,
   listProductReviews,
   submitReview,
   editReview,
   removeReview,
 } from '../services/review.service.js';
+
+export async function getReviewCount(req, res, next) {
+  try {
+    const total = await countReviews();
+    res.status(200).json({ data: { total } });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function getProductReviews(req, res, next) {
   try {

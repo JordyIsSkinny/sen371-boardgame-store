@@ -60,6 +60,7 @@ const POLICY = [
   { method: 'post', path: '/products/:id/reviews', requires: AUTH },
   { method: 'put', path: '/reviews/:id', requires: AUTH },
   { method: 'delete', path: '/reviews/:id', requires: AUTH },
+  { method: 'get', path: '/reviews/count', requires: ADMIN },
 
   // Users
   { method: 'get', path: '/users/me', requires: AUTH },

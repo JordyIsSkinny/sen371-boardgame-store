@@ -1,4 +1,5 @@
 import {
+  getTotalReviewCount,
   getReviewsByProduct,
   getReviewById,
   createReview,
@@ -14,6 +15,14 @@ import { getProductById } from '../repositories/product.repository.js';
 import ValidationError from '../errors/validation-error.js';
 import NotFoundError from '../errors/not-found-error.js';
 import ForbiddenError from '../errors/forbidden-error.js';
+
+// S9 admin dashboard "Total reviews" stat, replacing the mockup's "Pending
+// reviews" — decided on #125 that moderation is out of scope (already
+// built as delete-only, per the System Plan) and this is a real number
+// instead of a made-up one.
+export async function countReviews() {
+  return getTotalReviewCount();
+}
 
 export async function listProductReviews(
   productId,

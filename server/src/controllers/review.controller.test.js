@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {
+  getReviewCount,
   getProductReviews,
   createReview,
   updateReview,
@@ -30,6 +31,27 @@ describe('review.controller', () => {
     next = vi.fn();
 
     vi.clearAllMocks();
+  });
+
+  describe('getReviewCount', () => {
+    it('returns the total review count', async () => {
+      vi.spyOn(reviewService, 'countReviews').mockResolvedValue(42);
+
+      await getReviewCount(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ data: { total: 42 } });
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('passes service errors to next', async () => {
+      const error = new Error('boom');
+      vi.spyOn(reviewService, 'countReviews').mockRejectedValue(error);
+
+      await getReviewCount(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(error);
+    });
   });
 
   describe('getProductReviews', () => {
