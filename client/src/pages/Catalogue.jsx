@@ -96,23 +96,76 @@ export function Catalogue() {
   const [price, setPrice] = useState(1500);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sort, setSort] = useState("rating");
+  const [page, setPage] = useState(1);
+   // Categories load once — they're the filter sidebar's own options, not
+  // affected by which filters are currently applied.
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .get("/categories")
+      .then((res) => {
+        if (!cancelled) setCategories(res.data);
+      })
+      .catch(() => {
+        // Sidebar just renders empty if this fails — not worth a full-page
+        // error state for a secondary fetch.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
+  // Products re-fetch whenever any filter, sort, or page state changes.
+  // categoryId is the backend's single supported filter — the sidebar's
+  // multi-select maps down to "first selected category" for now, since
+  // filterProducts only accepts one categoryId (see product.repository.js).
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       setStatus("loading");
       try {
-        const [productsRes, categoriesRes] = await Promise.all([
-          apiClient.get("/products"),
-          apiClient.get("/categories"),
-        ]);
+        const params = new URLSearchParams();
+
+        if (playerCount) params.set("playerCount", playerCount);
+
+        if (selectedCategories.length > 0) {
+          const match = categories.find((c) => c.name === selectedCategories[0]);
+          if (match) params.set("categoryId", match.id);
+        }
+
+        // Playtime buckets are local ranges; the API only takes a single
+        // upper bound, so the smallest selected bucket's max wins.
+        if (selectedPlaytime.length > 0) {
+          const maxes = selectedPlaytime
+            .map((label) => PLAYTIME_BUCKETS.find((b) => b.label === label)?.max)
+            .filter((max) => Number.isFinite(max));
+          if (maxes.length > 0) {
+            params.set("maxPlayTime", Math.min(...maxes));
+          }
+        }
+
+        const sortMap = {
+          "price-asc": ["price", "asc"],
+          "price-desc": ["price", "desc"],
+          title: ["title", "asc"],
+          newest: ["createdAt", "desc"],
+          // "rating" has no server-side field yet (#111) — falls back to
+          // newest rather than sending a sortBy the API doesn't recognise.
+          rating: ["createdAt", "desc"],
+        };
+        const [sortBy, sortDir] = sortMap[sort] ?? ["createdAt", "desc"];
+        params.set("sortBy", sortBy);
+        params.set("sortDir", sortDir);
+        params.set("page", page);
+
+        const productsRes = await apiClient.get(`/products?${params.toString()}`);
         if (cancelled) return;
         setProducts(productsRes.data);
         setMeta(productsRes.meta ?? null);
-        setCategories(categoriesRes.data);
         setStatus("ready");
-      } catch {
+        } catch (err) {
+        console.error("Catalogue fetch failed:", err);
         if (!cancelled) setStatus("error");
       }
     }
@@ -121,7 +174,13 @@ export function Catalogue() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [playerCount, selectedCategories, selectedPlaytime, sort, page, categories]);
+
+  // Any filter change resets to page 1 — staying on page 4 of a filtered-down
+  // result set that only has 2 pages would show nothing.
+  useEffect(() => {
+    setPage(1);
+  }, [playerCount, selectedCategories, selectedPlaytime, sort]);
 
   function toggleCategory(name) {
     setSelectedCategories((prev) =>
@@ -373,21 +432,24 @@ export function Catalogue() {
             </div>
           )}
 
-          {meta && meta.totalPages > 1 && (
+                  {meta && meta.totalPages > 1 && (
             <div className="mt-8 flex justify-center gap-2">
               {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map((pageNum) => (
-                <span
+                <button
                   key={pageNum}
+                  type="button"
+                  onClick={() => setPage(pageNum)}
+                  aria-current={pageNum === meta.page ? "page" : undefined}
                   className={`flex h-9 w-9 items-center justify-center rounded-input text-sm ${
                     pageNum === meta.page
                       ? "bg-primary-900 text-neutral-100"
-                      : "border border-neutral-200 text-neutral-700"
+                      : "border border-neutral-200 text-neutral-700 hover:bg-neutral-50"
                   }`}
                 >
                   {pageNum}
-                </span>
+                </button>
               ))}
-            </div>
+                     </div>
           )}
         </div>
       </div>
