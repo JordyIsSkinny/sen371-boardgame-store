@@ -12,6 +12,10 @@ import { ErrorState } from "../components/ErrorState.jsx";
 // Line-item state is optimistic-free on purpose: every change re-reads the
 // server's response rather than computing a new lineTotal/subtotal
 // client-side, since price and stock are the server's source of truth.
+//
+// Updated per #127 to match Figma node 118:216: thumbnails, category label,
+// column headers, "Continue shopping" link, delivery/total lines in the
+// summary, and "Proceed to checkout" button copy.
 
 const currency = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 
@@ -80,6 +84,9 @@ export function Cart() {
     );
   }
 
+  const shippingFee = 0;
+  const total = cart.subtotal + shippingFee;
+
   return (
     <section>
       <nav className="text-sm text-neutral-500">
@@ -88,15 +95,36 @@ export function Cart() {
 
       <h1 className="mt-2 font-heading text-h2 text-primary-900">Your cart</h1>
 
-      <div className="mt-6 flex flex-col gap-4">
+      <div className="mt-6 grid grid-cols-[1fr_auto_auto_auto] gap-4 border-b border-neutral-200 pb-2 text-sm font-medium text-neutral-500">
+        <span>Product</span>
+        <span>Qty</span>
+        <span className="text-right">Price</span>
+        <span aria-hidden="true" />
+      </div>
+
+      <div className="mt-2 flex flex-col gap-4">
         {cart.items.map((item) => (
           <div
             key={item.id}
             className="flex items-center justify-between gap-4 rounded-card border border-neutral-200 bg-white p-4"
           >
-            <div className="min-w-0 flex-1">
-              <p className="font-heading text-h4 text-primary-900">{item.product.title}</p>
-              <p className="text-small text-neutral-600">{currency.format(item.product.price)} each</p>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              {item.product.imageUrl ? (
+                <img
+                  src={item.product.imageUrl}
+                  alt=""
+                  className="h-14 w-14 flex-shrink-0 rounded-input object-cover"
+                />
+              ) : (
+                <div aria-hidden="true" className="h-14 w-14 flex-shrink-0 rounded-input bg-neutral-100" />
+              )}
+              <div className="min-w-0">
+                <p className="font-heading text-h4 text-primary-900">{item.product.title}</p>
+                {item.product.categoryName && (
+                  <p className="text-xs text-neutral-500">{item.product.categoryName}</p>
+                )}
+                <p className="text-small text-neutral-600">{currency.format(item.product.price)} each</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -136,14 +164,27 @@ export function Cart() {
         ))}
       </div>
 
+      <Link to="/catalogue" className="mt-4 inline-block text-sm font-medium text-primary-700 hover:underline">
+        &larr; Continue shopping
+      </Link>
+
       <div className="mt-8 flex justify-end">
         <div className="w-full max-w-xs rounded-card border border-neutral-200 bg-white p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-neutral-700">Subtotal</span>
-            <span className="font-semibold text-primary-900">{currency.format(cart.subtotal)}</span>
+          <div className="flex items-center justify-between text-sm text-neutral-700">
+            <span>Subtotal</span>
+            <span>{currency.format(cart.subtotal)}</span>
           </div>
+          <div className="mt-2 flex items-center justify-between text-sm text-neutral-700">
+            <span>Delivery</span>
+            <span>{currency.format(shippingFee)}</span>
+          </div>
+          <div className="mt-2 flex items-center justify-between border-t border-neutral-200 pt-2 font-semibold text-primary-900">
+            <span>Total</span>
+            <span>{currency.format(total)}</span>
+          </div>
+          <p className="mt-2 text-xs text-neutral-500">Delivery calculated at checkout.</p>
           <Link to="/checkout" className="mt-4 block">
-            <Button className="w-full">Checkout</Button>
+            <Button className="w-full">Proceed to checkout</Button>
           </Link>
         </div>
       </div>
