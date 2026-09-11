@@ -50,6 +50,13 @@ const POLICY = [
   { method: 'patch', path: '/cart/items/:itemId', requires: AUTH },
   { method: 'delete', path: '/cart/items/:itemId', requires: AUTH },
 
+  // Addresses — same reasoning as cart: registered customers only, and
+  // always scoped to req.user.id (never a body-supplied userId), so there
+  // is no separate owner-vs-admin distinction to encode here the way
+  // orders/:id has.
+  { method: 'get', path: '/addresses', requires: AUTH },
+  { method: 'post', path: '/addresses', requires: AUTH },
+
   // Orders
   { method: 'post', path: '/orders', requires: AUTH },
   { method: 'get', path: '/orders', requires: AUTH },

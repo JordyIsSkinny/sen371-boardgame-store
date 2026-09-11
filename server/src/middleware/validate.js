@@ -377,6 +377,39 @@ export const productQuerySchema = (query) => {
 
   return errors;
 };
+export const createAddressSchema = (body) => {
+  const errors = [];
+
+  if (!isNonEmptyString(body.line1)) {
+    errors.push({ field: "line1", message: "Address line 1 is required." });
+  }
+
+  if (body.line2 !== undefined && typeof body.line2 !== "string") {
+    errors.push({ field: "line2", message: "Address line 2 must be a string." });
+  }
+
+  if (!isNonEmptyString(body.city)) {
+    errors.push({ field: "city", message: "City is required." });
+  }
+
+  if (!isNonEmptyString(body.provinceState)) {
+    errors.push({ field: "provinceState", message: "Province/state is required." });
+  }
+
+  if (!isNonEmptyString(body.postalCode)) {
+    errors.push({ field: "postalCode", message: "Postal code is required." });
+  }
+
+  if (!isNonEmptyString(body.country)) {
+    errors.push({ field: "country", message: "Country is required." });
+  }
+
+  if (body.isDefault !== undefined && typeof body.isDefault !== "boolean") {
+    errors.push({ field: "isDefault", message: "isDefault must be a boolean." });
+  }
+
+  return errors;
+};
 export const addCartItemSchema = (body) => {
   const errors = [];
 
