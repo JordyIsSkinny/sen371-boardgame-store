@@ -98,7 +98,7 @@ export function Register() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-8">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label
                 htmlFor="register-first-name"

@@ -152,35 +152,44 @@ export function OrderHistory() {
                 </span>
               </div>
 
-              <div className="mt-4 flex items-center gap-4 border-t border-neutral-200 pt-4">
-                <div className="flex shrink-0 gap-2">
-                  {order.items.map((item, i) => (
-                    <div
-                      key={item.id}
-                      aria-hidden="true"
-                      className={`size-14 rounded-input ${swatchColors[i % swatchColors.length]}`}
-                    />
-                  ))}
+              {/* Swatches+count could easily out-width a phone screen on
+                  their own (a 3-item order is already ~184px of fixed-size
+                  swatches), so this splits into an info row and an actions
+                  row that stack below sm rather than fighting for space in
+                  one line, same pattern as Cart.jsx's line items. */}
+              <div className="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex items-center gap-3 sm:flex-1">
+                  <div className="flex shrink-0 gap-2">
+                    {order.items.map((item, i) => (
+                      <div
+                        key={item.id}
+                        aria-hidden="true"
+                        className={`size-14 rounded-input ${swatchColors[i % swatchColors.length]}`}
+                      />
+                    ))}
+                  </div>
+
+                  <p className="font-body text-small text-neutral-700">
+                    {order.items.length} {order.items.length === 1 ? "item" : "items"}
+                  </p>
                 </div>
 
-                <p className="flex-1 font-body text-small text-neutral-700">
-                  {order.items.length} {order.items.length === 1 ? "item" : "items"}
-                </p>
+                <div className="flex items-center justify-between gap-4 sm:justify-end">
+                  <p className="font-heading text-h4 font-semibold text-neutral-900">
+                    {currency.format(Number(order.total))}
+                  </p>
 
-                <p className="font-heading text-h4 font-semibold text-neutral-900">
-                  {currency.format(Number(order.total))}
-                </p>
+                  {order.status === "delivered" && (
+                    <p className="hidden font-body text-small text-primary-500 sm:block">Write a review</p>
+                  )}
 
-                {order.status === "delivered" && (
-                  <p className="hidden font-body text-small text-primary-500 sm:block">Write a review</p>
-                )}
-
-                <button
-                  type="button"
-                  className="rounded-input border border-primary-500 bg-white px-5 py-2.5 font-body text-small font-medium text-primary-700 transition hover:bg-primary-100"
-                >
-                  View details
-                </button>
+                  <button
+                    type="button"
+                    className="rounded-input border border-primary-500 bg-white px-5 py-2.5 font-body text-small font-medium text-primary-700 transition hover:bg-primary-100"
+                  >
+                    View details
+                  </button>
+                </div>
               </div>
             </article>
           ))}
