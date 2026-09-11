@@ -108,9 +108,20 @@ export function Home() {
           wrapper clips the few px of sub-pixel bleed the `vw` unit produces
           when a vertical scrollbar is present (vw includes scrollbar width,
           the flex layout it's measured against doesn't) — scoped to this
-          page only, not a global fix. */}
+          page only, not a global fix.
+
+          The inner content div needs its own px-4, matching the sibling
+          `max-w-6xl px-4 py-10` wrapper below (for Browse by category /
+          New arrivals) — without it, this div's content sits flush with
+          its own max-w-6xl box edge rather than inset like every other
+          section on the page, which lands it 16px to the left of this
+          wrapper's overflow-x-hidden clip boundary (that boundary tracks
+          Layout's padded <main>, not the true viewport edge) and gets
+          silently clipped: nearly invisible on the bold H1, but enough to
+          eat a full character or two off the smaller paragraph text below
+          it (e.g. "Strategy" rendering as "rategy"). */}
       <section className="relative mx-[calc(50%-50vw)] bg-primary-900 px-4 py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl px-4">
           <h1 className="font-heading text-display font-semibold leading-tight text-white">
             Games worth
             <br />
