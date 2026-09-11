@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorize.js";
-import { validate, updateUserSchema, userIdSchema } from "../middleware/validate.js";
+import { validate, updateUserSchema, userIdSchema, userQuerySchema } from "../middleware/validate.js";
 import * as userController from "../controllers/user.controller.js";
 
 const router = Router();
@@ -15,7 +15,13 @@ router.put(
   userController.updateMe,
 );
 
-router.get("/", authenticate, authorize("admin"), userController.listUsers);
+router.get(
+  "/",
+  authenticate,
+  authorize("admin"),
+  validate({ query: userQuerySchema }),
+  userController.listUsers,
+);
 
 router.get(
   "/:id",

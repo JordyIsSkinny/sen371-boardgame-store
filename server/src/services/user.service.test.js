@@ -48,12 +48,29 @@ describe("user.service", () => {
   });
 
   describe("listUsers", () => {
-    it("returns every user from the repository", async () => {
-      userProfileRepository.getAllUsers.mockResolvedValue([mockUser]);
+    it("returns the repository's paginated result", async () => {
+      const paginated = { items: [mockUser], total: 1, page: 1, pageSize: 20 };
+      userProfileRepository.getAllUsers.mockResolvedValue(paginated);
 
-      const users = await userService.listUsers();
+      const result = await userService.listUsers({ page: 1, pageSize: 20 });
 
-      expect(users).toEqual([mockUser]);
+      expect(result).toBe(paginated);
+    });
+
+    it("passes page and pageSize through to the repository", async () => {
+      userProfileRepository.getAllUsers.mockResolvedValue({
+        items: [],
+        total: 0,
+        page: 2,
+        pageSize: 10,
+      });
+
+      await userService.listUsers({ page: 2, pageSize: 10 });
+
+      expect(userProfileRepository.getAllUsers).toHaveBeenCalledWith({
+        page: 2,
+        pageSize: 10,
+      });
     });
   });
 

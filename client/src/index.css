@@ -40,6 +40,24 @@
    * CSS. */
   --color-accent: #e8a33d;
 
+  /* Semantic status colours — bound Figma variables, confirmed via
+   * get_variable_defs against Input's error state, StockBadge, and
+   * ProductCard. No `info` variable exists anywhere in the current
+   * component set, so it isn't defined here — add it if a real use shows
+   * up rather than guessing a value now. */
+  --color-success: #2e7d5b;
+  --color-warning: #c77a20;
+  --color-error: #c0392b;
+
+  /* StockBadge tint backgrounds. Not Figma variables — binding a variable
+   * and setting opacity on it didn't hold in the Figma Plugin API, so
+   * these are literal fills in the file (confirmed via get_design_context
+   * on StockBadge, node 66:27). Named here so nothing downstream
+   * reinvents them from a screenshot. */
+  --color-success-tint: #e5f0ec;
+  --color-warning-tint: #f8eedf;
+  --color-neutral-tint: #e7e5e1;
+
   /* Headings Bricolage Grotesque, body Inter. Loaded via Google Fonts in
    * index.html; system-font fallbacks cover the load gap and a
    * fonts.googleapis.com outage. */

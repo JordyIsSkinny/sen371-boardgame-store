@@ -9,7 +9,7 @@ describe("user.controller", () => {
   let next;
 
   beforeEach(() => {
-    req = { params: {}, body: {}, user: {} };
+    req = { params: {}, query: {}, body: {}, user: {} };
     res = { status: vi.fn().mockReturnThis(), json: vi.fn(), send: vi.fn() };
     next = vi.fn();
     vi.clearAllMocks();
@@ -64,13 +64,36 @@ describe("user.controller", () => {
   });
 
   describe("listUsers", () => {
-    it("returns every user", async () => {
+    it("returns the data/meta envelope, matching every other list endpoint", async () => {
       const users = [{ id: 1 }, { id: 2 }];
-      vi.spyOn(userService, "listUsers").mockResolvedValue(users);
+      vi.spyOn(userService, "listUsers").mockResolvedValue({
+        items: users,
+        total: 42,
+        page: 1,
+        pageSize: 20,
+      });
 
       await listUsers(req, res, next);
 
-      expect(res.json).toHaveBeenCalledWith({ data: users });
+      expect(userService.listUsers).toHaveBeenCalledWith({ page: 1, pageSize: 20 });
+      expect(res.json).toHaveBeenCalledWith({
+        data: users,
+        meta: { page: 1, limit: 20, total: 42, totalPages: 3 },
+      });
+    });
+
+    it("reads page and pageSize from the query string", async () => {
+      req.query = { page: "2", pageSize: "5" };
+      vi.spyOn(userService, "listUsers").mockResolvedValue({
+        items: [],
+        total: 12,
+        page: 2,
+        pageSize: 5,
+      });
+
+      await listUsers(req, res, next);
+
+      expect(userService.listUsers).toHaveBeenCalledWith({ page: "2", pageSize: "5" });
     });
 
     it("passes service errors to next", async () => {

@@ -13,8 +13,8 @@ export async function updateUserProfile(userId, data) {
   return userProfileRepository.updateUser(userId, data);
 }
 
-export async function listUsers() {
-  return userProfileRepository.getAllUsers();
+export async function listUsers({ page, pageSize } = {}) {
+  return userProfileRepository.getAllUsers({ page, pageSize });
 }
 
 export async function getUserByIdAsAdmin(id) {
