@@ -95,7 +95,10 @@ export function Cart() {
 
       <h1 className="mt-2 font-heading text-h2 text-primary-900">Your cart</h1>
 
-      <div className="mt-6 grid grid-cols-[1fr_auto_auto_auto] gap-4 border-b border-neutral-200 pb-2 text-sm font-medium text-neutral-500">
+      {/* Column headers only make sense once items lay out as a row
+          (sm:+) — below that, items stack into cards and there's no row
+          for these to line up against. */}
+      <div className="mt-6 hidden gap-4 border-b border-neutral-200 pb-2 text-sm font-medium text-neutral-500 sm:grid sm:grid-cols-[1fr_auto_auto_auto]">
         <span>Product</span>
         <span>Qty</span>
         <span className="text-right">Price</span>
@@ -106,7 +109,7 @@ export function Cart() {
         {cart.items.map((item) => (
           <div
             key={item.id}
-            className="flex items-center justify-between gap-4 rounded-card border border-neutral-200 bg-white p-4"
+            className="flex flex-col gap-4 rounded-card border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex min-w-0 flex-1 items-center gap-3">
               {item.product.imageUrl ? (
@@ -127,39 +130,44 @@ export function Cart() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                disabled={pendingItemId === item.id || item.quantity <= 1}
-                aria-label="Decrease quantity"
-                className="flex h-9 w-9 items-center justify-center rounded-input border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-40"
+            {/* Qty/price/remove stay a single row even on mobile (stacked
+                under the product block above, not each on their own line)
+                — this is the part of the card people compare at a glance. */}
+            <div className="flex items-center justify-between gap-4 sm:justify-end">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                  disabled={pendingItemId === item.id || item.quantity <= 1}
+                  aria-label="Decrease quantity"
+                  className="flex h-9 w-9 items-center justify-center rounded-input border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-40"
+                >
+                  &minus;
+                </button>
+                <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  disabled={pendingItemId === item.id}
+                  aria-label="Increase quantity"
+                  className="flex h-9 w-9 items-center justify-center rounded-input border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-40"
+                >
+                  &#43;
+                </button>
+              </div>
+
+              <p className="w-20 text-right font-semibold text-primary-900 sm:w-24">
+                {currency.format(item.lineTotal)}
+              </p>
+
+              <Button
+                style="ghost"
+                state={pendingItemId === item.id ? "disabled" : "default"}
+                onClick={() => removeItem(item.id)}
               >
-                &minus;
-              </button>
-              <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-              <button
-                type="button"
-                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                disabled={pendingItemId === item.id}
-                aria-label="Increase quantity"
-                className="flex h-9 w-9 items-center justify-center rounded-input border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-40"
-              >
-                &#43;
-              </button>
+                Remove
+              </Button>
             </div>
-
-            <p className="w-24 text-right font-semibold text-primary-900">
-              {currency.format(item.lineTotal)}
-            </p>
-
-            <Button
-              style="ghost"
-              state={pendingItemId === item.id ? "disabled" : "default"}
-              onClick={() => removeItem(item.id)}
-            >
-              Remove
-            </Button>
           </div>
         ))}
       </div>
