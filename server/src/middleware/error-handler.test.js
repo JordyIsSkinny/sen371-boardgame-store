@@ -59,6 +59,27 @@ describe('errorHandler', () => {
     });
   });
 
+  it('maps Prisma foreign key constraint errors (P2003) to 422 VALIDATION_ERROR', () => {
+    const err = new Prisma.PrismaClientKnownRequestError(
+      'Foreign key constraint failed on the field: `categoryId`',
+      {
+        code: 'P2003',
+        clientVersion: '5.22.0',
+      }
+    );
+
+    const res = mockRes();
+
+    errorHandler(err, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(422);
+    expect(res.json).toHaveBeenCalledWith({
+      status: 422,
+      error: 'VALIDATION_ERROR',
+      message: 'One or more referenced records do not exist.',
+    });
+  });
+
   it('returns 500 for an unexpected Prisma error', () => {
     const err = new Prisma.PrismaClientKnownRequestError(
       'Unexpected database error',

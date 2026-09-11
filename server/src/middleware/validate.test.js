@@ -59,6 +59,41 @@ describe("validate middleware", () => {
       },
     ]);
   });
+    it("rejects an invalid categoryId and quantityOnHand on product creation", () => {
+    const errors = createProductSchema({
+      title: "Azul",
+      slug: `azul-${Date.now()}`,
+      minPlayers: 2,
+      maxPlayers: 4,
+      playTimeMinutes: 45,
+      minAge: 8,
+      complexityRating: 1.8,
+      price: 550,
+      categoryId: "abc",
+      quantityOnHand: -5,
+    });
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        { field: "categoryId", message: "Category ID must be a positive integer." },
+        { field: "quantityOnHand", message: "Quantity on hand must be a non-negative integer." },
+      ])
+    );
+  });
+    it("accepts product creation data with no categoryId or quantityOnHand", () => {
+    const errors = createProductSchema({
+      title: "Azul",
+      slug: `azul-${Date.now()}`,
+      minPlayers: 2,
+      maxPlayers: 4,
+      playTimeMinutes: 45,
+      minAge: 8,
+      complexityRating: 1.8,
+      price: 550,
+    });
+
+    expect(errors).toEqual([]);
+  });
     it("rejects invalid product creation data", () => {
     const errors = createProductSchema({
       title: "",

@@ -121,6 +121,58 @@ describe('createProduct', () => {
   });
 });
 
+describe('createProduct with an optional category and initial stock', () => {
+  let category;
+
+  beforeAll(async () => {
+    category = await prisma.category.create({
+      data: { name: `Create Test ${Date.now()}`, slug: `create-test-${Date.now()}` },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.category.delete({ where: { id: category.id } });
+  });
+
+  it('creates the ProductCategory and Inventory rows in the same transaction', async () => {
+    const created = await createProduct({
+      title: 'Brass: Birmingham',
+      slug: `brass-test-${Date.now()}`,
+      minPlayers: 2,
+      maxPlayers: 4,
+      playTimeMinutes: 120,
+      minAge: 14,
+      complexityRating: 3.9,
+      price: 750.0,
+      categoryId: category.id,
+      quantityOnHand: 8,
+    });
+    createdIds.push(created.id);
+
+    const withRelations = await getProductById(created.id);
+    expect(withRelations.categories).toEqual([expect.objectContaining({ id: category.id })]);
+    expect(withRelations.inventory).toEqual(expect.objectContaining({ quantityOnHand: 8 }));
+  });
+
+  it('still creates a product with no category or inventory row when neither is provided', async () => {
+    const created = await createProduct({
+      title: 'Plain Product',
+      slug: `plain-test-${Date.now()}`,
+      minPlayers: 1,
+      maxPlayers: 2,
+      playTimeMinutes: 20,
+      minAge: 5,
+      complexityRating: 1.0,
+      price: 100.0,
+    });
+    createdIds.push(created.id);
+
+    const withRelations = await getProductById(created.id);
+    expect(withRelations.categories).toEqual([]);
+    expect(withRelations.inventory).toBeNull();
+  });
+});
+
 describe('updateProduct', () => {
   it('updates an existing product', async () => {
     const updated = await updateProduct(testProduct.id, { price: 999.99 });
