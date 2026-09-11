@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import AppError from "../errors/app-error.js";
 import ConflictError from "../errors/conflict-error.js";
 import NotFoundError from "../errors/not-found-error.js";
+import ValidationError from "../errors/validation-error.js";
 
 function mapPrismaError(err) {
   if (!(err instanceof Prisma.PrismaClientKnownRequestError)) {
@@ -17,6 +18,11 @@ function mapPrismaError(err) {
     case "P2025":
       return new NotFoundError(
         "The requested resource was not found."
+      );
+
+    case "P2003":
+      return new ValidationError(
+        "One or more referenced records do not exist."
       );
 
     default:

@@ -24,8 +24,36 @@ export async function getAllProducts() {
   });
 }
 
-export async function createProduct(data) {
-  return prisma.product.create({ data });
+// categoryId/quantityOnHand are optional — a caller that omits both gets
+// the previous plain-create behaviour. When either is present, the
+// ProductCategory and/or Inventory row is created in the same transaction
+// as the product itself, mirroring order.repository.js's createOrder.
+// Without this, a product created via POST /products had no category (so
+// it was invisible to filterProducts' categoryId filter) and no inventory
+// row (so it always read as out-of-stock) until a separate admin edit
+// filled both in — see #126.
+export async function createProduct({ categoryId, quantityOnHand, ...productData }) {
+  if (categoryId === undefined && quantityOnHand === undefined) {
+    return prisma.product.create({ data: productData });
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.create({ data: productData });
+
+    if (categoryId !== undefined) {
+      await tx.productCategory.create({
+        data: { productId: product.id, categoryId: Number(categoryId) },
+      });
+    }
+
+    if (quantityOnHand !== undefined) {
+      await tx.inventory.create({
+        data: { productId: product.id, quantityOnHand: Number(quantityOnHand) },
+      });
+    }
+
+    return product;
+  });
 }
 
 export async function updateProduct(id, data) {
