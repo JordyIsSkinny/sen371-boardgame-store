@@ -152,3 +152,4 @@ vite.config.ts.timestamp-*
 /test-results/
 /blob-report/
 /playwright/.cache/
+e2e/.auth/
