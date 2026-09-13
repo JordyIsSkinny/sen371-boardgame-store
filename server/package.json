@@ -8,6 +8,7 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "test": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs run",
+    "test:coverage": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs run --coverage",
     "test:watch": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -26,6 +27,7 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.0",
     "prisma": "^5.22.0",
     "supertest": "^7.2.2",
     "vitest": "^2.1.0"

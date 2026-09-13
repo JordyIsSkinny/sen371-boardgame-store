@@ -5,6 +5,10 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json'],
+    },
   },
   envDir: '.',
-});
+}); 
