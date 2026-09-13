@@ -1,0 +1,134 @@
+name: Deploy API to Render
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/**"
+      - "render.yaml"
+      - ".github/workflows/deploy-server.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Unlike the Pages workflow this does not cancel in progress. Cancelling this
+# job would not cancel the deploy Render has already started — it would only
+# stop us watching it, leaving the service mid-deploy with a green tick in the
+# Actions tab. Queuing instead means the later commit deploys after the
+# earlier one, which is also the order that leaves the service on the newest
+# commit.
+concurrency:
+  group: deploy-server
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Trigger deploy and verify
+    runs-on: ubuntu-latest
+
+    environment:
+      name: render
+      url: ${{ vars.RENDER_API_URL }}
+
+    steps:
+      # Fails early with a readable message rather than letting curl fail on
+      # an empty URL, which reports as "unsupported protocol" and sends you
+      # looking for a network fault instead of a missing secret.
+      - name: Check deployment configuration is present
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          API_URL: ${{ vars.RENDER_API_URL }}
+        run: |
+          missing=0
+
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::Missing secret RENDER_DEPLOY_HOOK_URL. Render dashboard > the API service > Settings > Deploy Hook, then Settings > Secrets and variables > Actions > Secrets in GitHub."
+            missing=1
+          fi
+
+          if [ -z "$API_URL" ]; then
+            echo "::error::Missing variable RENDER_API_URL, e.g. https://sen371-boardgame-store-api.onrender.com. Settings > Secrets and variables > Actions > Variables in GitHub."
+            missing=1
+          fi
+
+          exit $missing
+
+      - name: Trigger Render deploy
+        id: trigger
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          # Recorded before the hook fires and used by the verification step
+          # below. Anything the API reports as having been up for longer than
+          # this is the *old* instance still answering.
+          echo "triggered_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+          # --fail-with-body so a rejected hook prints Render's reason rather
+          # than just a non-zero exit.
+          curl --silent --show-error --fail-with-body \
+            --request POST "$DEPLOY_HOOK"
+
+          echo
+          echo "Deploy requested. Render builds from the commit on main, not from this runner."
+
+      - name: Wait for the new instance to report ready
+        env:
+          API_URL: ${{ vars.RENDER_API_URL }}
+          TRIGGERED_AT: ${{ steps.trigger.outputs.triggered_at }}
+        run: |
+          # A free-tier build plus a cold start runs comfortably over five
+          # minutes, and the first request after a deploy is also the request
+          # that wakes the instance.
+          deadline=$(( $(date +%s) + 900 ))
+          attempt=0
+
+          echo "Polling $API_URL/api/v1/health/ready"
+
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            attempt=$(( attempt + 1 ))
+
+            body=$(curl --silent --max-time 60 "$API_URL/api/v1/health/ready" || true)
+            status=$(printf '%s' "$body" | jq -r '.status // empty' 2>/dev/null || true)
+            uptime=$(printf '%s' "$body" | jq -r '.uptime // empty' 2>/dev/null || true)
+
+            if [ "$status" = "ok" ] && [ -n "$uptime" ]; then
+              elapsed=$(( $(date +%s) - TRIGGERED_AT ))
+
+              # The readiness check alone is not proof of a deploy: on the
+              # free tier the old instance keeps serving while the new one
+              # builds, so a plain 200 here can be the previous release
+              # answering. An instance whose own uptime is shorter than the
+              # time since we fired the hook must have started after it.
+              if [ "$uptime" -lt "$elapsed" ]; then
+                echo "Ready after ${elapsed}s (instance uptime ${uptime}s, attempt ${attempt})."
+                echo "$body"
+                exit 0
+              fi
+
+              echo "Attempt ${attempt}: ready, but uptime ${uptime}s >= ${elapsed}s since trigger — still the previous instance."
+            else
+              # Empty or non-ok is the normal picture mid-deploy: the old
+              # instance is gone and the new one is not listening yet.
+              echo "Attempt ${attempt}: not ready yet (${status:-no response})."
+            fi
+
+            sleep 15
+          done
+
+          echo "::error::The API did not report ready within 15 minutes. Check the deploy log in the Render dashboard — a failed 'prisma migrate deploy' during build is the usual cause, and it fails the build rather than the health check."
+          exit 1
+
+      - name: Report the deployed endpoints
+        env:
+          API_URL: ${{ vars.RENDER_API_URL }}
+        run: |
+          {
+            echo "### API deployed"
+            echo
+            echo "| Endpoint | URL |"
+            echo "|---|---|"
+            echo "| Liveness | $API_URL/api/v1/health |"
+            echo "| Readiness | $API_URL/api/v1/health/ready |"
+            echo "| API root | $API_URL/api/v1 |"
+          } >> "$GITHUB_STEP_SUMMARY"
