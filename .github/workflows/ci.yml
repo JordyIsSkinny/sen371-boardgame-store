@@ -103,6 +103,27 @@ jobs:
           REFRESH_TOKEN_EXPIRES_IN: 7d
         run: node ./node_modules/vitest/vitest.mjs run
 
+  client-test:
+    name: Client Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Run client tests
+        working-directory: client
+        run: npm test
+
   build:
     name: Build
     runs-on: ubuntu-latest
