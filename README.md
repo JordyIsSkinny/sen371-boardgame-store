@@ -148,6 +148,53 @@ If the service was created by hand instead of from the Blueprint, `render.yaml`
 does not retroactively reconfigure it — set the dashboard fields to match the
 file.
 
+### Production environment variables
+
+Nine variables, set in three different places. The middle column is the one
+to get right — putting a secret in `render.yaml` would commit it, and setting
+`PORT` by hand breaks the service.
+
+| Variable | Set in | Production value |
+|---|---|---|
+| `DATABASE_URL` | Render dashboard | Neon **pooled** connection string |
+| `DIRECT_URL` | Render dashboard | Neon **direct** connection string |
+| `JWT_SECRET` | Render dashboard | Fresh 64-character random hex |
+| `REFRESH_TOKEN_SECRET` | Render dashboard | Fresh, and different again |
+| `CLIENT_ORIGIN` | Render dashboard | `https://jordyisskinny.github.io` |
+| `NODE_ENV` | `render.yaml` | `production` |
+| `JWT_EXPIRES_IN` | `render.yaml` | `15m` |
+| `REFRESH_TOKEN_EXPIRES_IN` | `render.yaml` | `7d` |
+| `PORT` | Render, automatically | Do not set it |
+
+**The two database URLs are not interchangeable.** `DATABASE_URL` takes the
+pooled string (the host containing `-pooler`) because Prisma opens a
+connection pool per instance and Neon's free tier caps direct connections.
+`DIRECT_URL` takes the unpooled one because `prisma migrate deploy`, which runs
+in Render's build command, needs a session it can hold open — run through the
+pooler it fails partway, and a half-applied migration is the worst outcome
+available. `schema.prisma` already declares both.
+
+**Generate the two secrets fresh rather than copying them out of a local
+`.env`.** The development secrets exist in four working copies and a synced
+OneDrive folder; reusing one means a token minted on any of those machines is
+valid against production. `config/index.js` refuses to start if the two match
+each other, but nothing can detect that they were reused.
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+**`NODE_ENV=production` is load-bearing, not cosmetic.** It is what sets
+`Secure` and `SameSite=None` on the refresh cookie in `auth.controller.js`,
+without which the cross-site cookie is rejected outright by the browser. It
+also drops Prisma's query logging, which would otherwise write every query to
+Render's logs.
+
+Changing any variable in the Render dashboard restarts the service on its own;
+no redeploy is needed. Point `DATABASE_URL` at a database whose migrations
+have not been applied, though, and the restart succeeds while every request
+fails — the build step that runs migrations does not re-run on a restart.
+
 ### CLIENT_ORIGIN
 
 This is the variable that fails quietly rather than loudly, so it is worth
