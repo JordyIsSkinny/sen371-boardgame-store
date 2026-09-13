@@ -30,6 +30,9 @@ function mapPrismaError(err) {
   }
 }
 
+// Express only treats a 4-arg function as error-handling middleware, so
+// `next` must stay in the signature even though it's unused.
+// eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
   // Map known Prisma errors to application errors first.
   const mappedError = mapPrismaError(err);
