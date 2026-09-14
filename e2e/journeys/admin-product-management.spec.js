@@ -29,9 +29,12 @@ import { registerCustomer } from "../support/api.js";
  * separate tests, and the API check reuses the token from registration rather
  * than logging in again. Both are the same constraint: auth.routes.js limits
  * /auth/register and /auth/login together to five requests per minute per IP
- * (System Plan 8.4), and this file already spends two of those on the two
- * describe blocks — a third case that logged in on its own would risk tripping
- * the limiter on a run that also exercises journeys 2, 3 and 4.
+ * (System Plan 8.4). The negative case alone spends two of those — one
+ * register, one login — and the positive case, when admin credentials are
+ * configured, spends at least one more login, possibly two if the /admin
+ * navigation above needs its retry. A third case that logged in on its own
+ * would risk tripping the limiter on a run that also exercises journeys 2, 3
+ * and 4.
  */
 test.describe("journey 5: admin product management", () => {
   test.describe("negative case: a customer is denied admin access", () => {
