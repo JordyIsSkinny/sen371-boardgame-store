@@ -1,0 +1,29 @@
+name: Regenerate Linux Lockfile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Regenerate server lockfile
+        working-directory: server
+        run: npm install --package-lock-only --include=optional --ignore-scripts
+
+      - name: Commit lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/package-lock.json
+          git commit -m "fix(ci): regenerate lockfile for Linux" || echo "No lockfile changes"
+          git push
