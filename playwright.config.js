@@ -10,7 +10,13 @@ import { defineConfig, devices } from "@playwright/test";
  * deployed system:
  *
  *   npm run test:e2e
- *   E2E_BASE_URL=https://jordyisskinny.github.io/sen371-boardgame-store/ npm run test:e2e
+ *   E2E_BASE_URL=https://jordyisskinny.github.io/sen371-boardgame-store/ \
+ *   E2E_API_BASE_URL=https://sen371-boardgame-store-api.onrender.com/api/v1 \
+ *   npm run test:e2e
+ *
+ * E2E_BASE_URL alone falls back to the local API for direct state
+ * arrangement and the RBAC assertion (see support/app.js), which is wrong
+ * against the deployed frontend — both variables are needed together.
  */
 
 // The trailing slash is load-bearing and so is the path. vite.config.js sets
