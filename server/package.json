@@ -9,6 +9,7 @@
     "start": "node src/server.js",
     "lint": "eslint src eslint.config.js",
     "test": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs run",
+    "test:coverage": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs run --coverage",
     "test:watch": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -27,6 +28,7 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.0",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.10.0",
     "globals": "^17.12.0",
