@@ -27,17 +27,36 @@ import { ErrorState } from "../components/ErrorState.jsx";
 // no moderation concept exists in the schema, and the System Plan only
 // ever specs admin delete-any-review, which is already built.
 //
-// The sidebar's Products/Orders/Reviews links are non-interactive in the
-// mockup's sense that they don't route anywhere — this dashboard *is*
-// the products management view the Figma frame shows; there's no
-// separate Figma screen for a standalone Orders or Reviews admin page to
-// route to, so inventing one would be guessing at a design that doesn't
-// exist yet.
+// The sidebar's Products/Orders/Reviews links were non-interactive in the
+// mockup's sense that they didn't route anywhere — there's no separate
+// Figma screen for a standalone Orders or Reviews admin page. Products
+// and Orders are now real tabs that swap the table below on this same
+// page instead (issue #164, FR-A8: PUT /orders/:id/status had a tested
+// endpoint and no UI path). Reviews stays inert — still no moderation
+// concept to build a table against.
 
 const currency = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 const PAGE_SIZE = 10;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const SWATCH_COLORS = ["bg-primary-900", "bg-primary-600", "bg-error", "bg-warning", "bg-primary-300"];
+
+// Same status colour mapping as OrderHistory.jsx's customer-facing view —
+// see that file's comment for the Figma sourcing/inference behind it.
+const ORDER_STATUSES = ["pending", "paid", "shipped", "delivered", "cancelled"];
+const ORDER_STATUS_LABELS = {
+  pending: "Pending payment",
+  paid: "Paid",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+const ORDER_STATUS_STYLES = {
+  pending: "bg-warning-tint text-warning",
+  paid: "bg-info-tint text-info",
+  shipped: "bg-info-tint text-info",
+  delivered: "bg-success-tint text-success",
+  cancelled: "bg-neutral-tint text-neutral-700",
+};
 
 function stockStatus(inventory) {
   const quantity = inventory?.quantityOnHand ?? 0;
@@ -87,9 +106,12 @@ const EMPTY_FORM = {
 };
 
 export function AdminDashboard() {
+  const [view, setView] = useState("products");
+
   const [products, setProducts] = useState([]);
   const [meta, setMeta] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [lowStockCount, setLowStockCount] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
   const [ordersThisWeek, setOrdersThisWeek] = useState(0);
@@ -104,6 +126,10 @@ export function AdminDashboard() {
   const [addForm, setAddForm] = useState(EMPTY_FORM);
   const [addStatus, setAddStatus] = useState("idle");
   const [addError, setAddError] = useState(null);
+
+  const [editingOrderId, setEditingOrderId] = useState(null);
+  const [orderStatusDraft, setOrderStatusDraft] = useState("pending");
+  const [orderStatusError, setOrderStatusError] = useState(null);
 
   useEffect(() => {
     loadDashboard();
@@ -124,6 +150,7 @@ export function AdminDashboard() {
       setMeta(productsRes.meta);
       setCategories(categoriesRes.data);
       setTotalReviews(reviewCountRes.data.total);
+      setOrders(ordersRes.data);
 
       const lowStock = allProductsRes.data.filter(
         (product) => stockStatus(product.inventory) !== "in-stock"
@@ -185,6 +212,28 @@ export function AdminDashboard() {
     }
   }
 
+  function startOrderEdit(order) {
+    setEditingOrderId(order.id);
+    setOrderStatusError(null);
+    setOrderStatusDraft(order.status);
+  }
+
+  function cancelOrderEdit() {
+    setEditingOrderId(null);
+    setOrderStatusError(null);
+  }
+
+  async function saveOrderStatus(order) {
+    setOrderStatusError(null);
+    try {
+      await apiClient.put(`/orders/${order.id}/status`, { status: orderStatusDraft });
+      setEditingOrderId(null);
+      await loadDashboard();
+    } catch (err) {
+      setOrderStatusError(err.message ?? "Couldn't update this order's status.");
+    }
+  }
+
   function updateAddField(field, value) {
     setAddForm((prev) => ({ ...prev, [field]: value }));
   }
@@ -234,12 +283,26 @@ export function AdminDashboard() {
           <span className="rounded-input bg-primary-100 px-3 py-2 font-medium text-primary-900">
             Dashboard
           </span>
-          {/* Products/Orders/Reviews: visual only, matching the Figma frame.
-              This page already is the products management view; there's no
-              separate Figma screen for standalone Orders/Reviews admin
-              pages to route these to. */}
-          <span className="px-3 py-2 text-neutral-500">Products</span>
-          <span className="px-3 py-2 text-neutral-500">Orders</span>
+          <button
+            type="button"
+            onClick={() => setView("products")}
+            className={`rounded-input px-3 py-2 text-left ${
+              view === "products" ? "font-medium text-primary-900" : "text-neutral-500"
+            }`}
+          >
+            Products
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("orders")}
+            className={`rounded-input px-3 py-2 text-left ${
+              view === "orders" ? "font-medium text-primary-900" : "text-neutral-500"
+            }`}
+          >
+            Orders
+          </button>
+          {/* Reviews: still visual only — no moderation concept exists in
+              the schema (see #125), so there's no table to build here. */}
           <span className="px-3 py-2 text-neutral-500">Reviews</span>
         </nav>
       </aside>
@@ -255,13 +318,17 @@ export function AdminDashboard() {
         </div>
 
         <div className="mt-8 flex items-center justify-between">
-          <h2 className="font-heading text-h3 text-primary-900">Products</h2>
-          <Button onClick={() => setShowAddForm((v) => !v)}>
-            {showAddForm ? "Cancel" : "+ Add product"}
-          </Button>
+          <h2 className="font-heading text-h3 text-primary-900">
+            {view === "products" ? "Products" : "Orders"}
+          </h2>
+          {view === "products" && (
+            <Button onClick={() => setShowAddForm((v) => !v)}>
+              {showAddForm ? "Cancel" : "+ Add product"}
+            </Button>
+          )}
         </div>
 
-        {showAddForm && (
+        {view === "products" && showAddForm && (
           <form
             onSubmit={handleAddProduct}
             className="mt-4 flex flex-col gap-4 rounded-card border border-neutral-200 bg-white p-4"
@@ -363,8 +430,9 @@ export function AdminDashboard() {
           </form>
         )}
 
-        {editError && <p className="mt-4 text-sm text-red-600">{editError}</p>}
+        {view === "products" && editError && <p className="mt-4 text-sm text-red-600">{editError}</p>}
 
+        {view === "products" && (
         <div className="mt-4 overflow-x-auto rounded-card border border-neutral-200 bg-white">
           <table className="w-full text-left text-small">
             <thead>
@@ -469,8 +537,9 @@ export function AdminDashboard() {
             </tbody>
           </table>
         </div>
+        )}
 
-        {meta && meta.totalPages > 1 && (
+        {view === "products" && meta && meta.totalPages > 1 && (
           <div className="mt-6 flex justify-center gap-2">
             {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map((pageNum) => (
               <button
@@ -487,6 +556,101 @@ export function AdminDashboard() {
               </button>
             ))}
           </div>
+        )}
+
+        {view === "orders" && (
+          <>
+            {orderStatusError && <p className="mt-4 text-sm text-red-600">{orderStatusError}</p>}
+
+            {orders.length === 0 ? (
+              <p className="mt-4 text-small text-neutral-500">No orders yet.</p>
+            ) : (
+              <div className="mt-4 overflow-x-auto rounded-card border border-neutral-200 bg-white">
+                <table className="w-full text-left text-small">
+                  <thead>
+                    <tr className="border-b border-neutral-200 text-neutral-500">
+                      <th className="p-3 font-medium">Order</th>
+                      <th className="p-3 font-medium">Customer</th>
+                      <th className="p-3 font-medium">Items</th>
+                      <th className="p-3 font-medium">Total</th>
+                      <th className="p-3 font-medium">Placed</th>
+                      <th className="p-3 font-medium">Status</th>
+                      <th className="p-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => {
+                      const isEditingOrder = editingOrderId === order.id;
+                      return (
+                        <tr key={order.id} className="border-b border-neutral-100 last:border-0">
+                          <td className="p-3 font-medium text-neutral-900">#{order.id}</td>
+                          <td className="p-3 text-neutral-700">User #{order.userId}</td>
+                          <td className="max-w-xs truncate p-3 text-neutral-700" title={order.items.map((item) => `${item.productTitle} ×${item.quantity}`).join(", ")}>
+                            {order.items.length} {order.items.length === 1 ? "item" : "items"}
+                          </td>
+                          <td className="p-3 text-neutral-700">{currency.format(Number(order.total))}</td>
+                          <td className="p-3 text-neutral-700">
+                            {new Date(order.createdAt).toLocaleDateString("en-ZA")}
+                          </td>
+                          <td className="p-3">
+                            {isEditingOrder ? (
+                              <select
+                                value={orderStatusDraft}
+                                onChange={(e) => setOrderStatusDraft(e.target.value)}
+                                className="h-9 rounded-input border border-neutral-300 px-2 text-small text-neutral-900"
+                              >
+                                {ORDER_STATUSES.map((option) => (
+                                  <option key={option} value={option}>
+                                    {ORDER_STATUS_LABELS[option]}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span
+                                className={`rounded-pill px-2.5 py-1 text-caption font-medium ${
+                                  ORDER_STATUS_STYLES[order.status] ?? "bg-neutral-tint text-neutral-700"
+                                }`}
+                              >
+                                {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            {isEditingOrder ? (
+                              <div className="flex gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => saveOrderStatus(order)}
+                                  className="font-medium text-primary-700 hover:underline"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={cancelOrderEdit}
+                                  className="text-neutral-500 hover:underline"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => startOrderEdit(order)}
+                                className="font-medium text-primary-700 hover:underline"
+                              >
+                                Update status
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

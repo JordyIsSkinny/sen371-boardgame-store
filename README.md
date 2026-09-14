@@ -80,7 +80,22 @@ cd server && npm run dev
 cd client && npm run dev
 ```
 
-Health check: `GET http://localhost:3000/api/health`
+The API exposes two health endpoints, and the difference matters when
+something is broken:
+
+| Endpoint | Answers | Touches the database |
+|---|---|---|
+| `GET /api/v1/health` | Is the process running? | No |
+| `GET /api/v1/health/ready` | Can it serve traffic? | Yes, `SELECT 1` |
+
+```bash
+curl http://localhost:3000/api/v1/health/ready
+```
+
+Readiness answers `200` with `"database": "connected"`, or `503` with
+`"status": "degraded"` when the database is unreachable. Liveness stays `200`
+either way — Render restarts an instance whose liveness check fails, and
+restarting the API cannot repair a database.
 
 ## Testing
 
@@ -91,6 +106,98 @@ cd server && npm test        # API unit and integration tests
 The client has no automated test runner configured — frontend changes are
 verified manually against a running dev server rather than with component
 tests.
+
+## Deployment
+
+| Piece | Host | Deployed by |
+|---|---|---|
+| Client | GitHub Pages | `.github/workflows/deploy-pages.yml`, on pushes touching `client/**` |
+| API | Render | `.github/workflows/deploy-server.yml`, on pushes touching `server/**` |
+| Database | Neon | `prisma migrate deploy`, inside Render's build command |
+
+Both workflows also accept a manual run (Actions > the workflow > Run
+workflow), which is how you redeploy without an empty commit.
+
+### Creating the Render service
+
+Done once, by hand. `render.yaml` holds the build command, start command and
+health check path so they are reviewable in the repository rather than living
+only in a dashboard.
+
+1. In Render, **New > Blueprint** and select this repository. Render reads
+   `render.yaml` and proposes the service: root directory `server`, free plan,
+   Frankfurt region, health check `/api/v1/health`.
+2. Render prompts for the variables marked `sync: false` — the two database
+   URLs, the two token secrets, and `CLIENT_ORIGIN`. Fill them in from
+   `.env.example`, with **production** values, not the local ones.
+3. Copy the service URL (`https://<name>.onrender.com`). It is needed twice
+   more, in steps 4 and 6.
+4. **Settings > Deploy Hook** on the service, copy the URL, and add it to
+   GitHub as the repository secret `RENDER_DEPLOY_HOOK_URL` (Settings >
+   Secrets and variables > Actions > Secrets). It is a secret because anyone
+   holding the URL can trigger a deploy.
+5. Add the repository **variable** `RENDER_API_URL` (same page, Variables tab)
+   set to the service URL with no trailing slash. A variable rather than a
+   secret so the deploy log shows which host it polled.
+6. Add the repository variable `VITE_API_BASE_URL` set to
+   `https://<name>.onrender.com/api/v1`, then re-run the Pages workflow. The
+   client build bakes this in at build time, so until it is set and the client
+   is rebuilt, the deployed site loads but every API call fails.
+
+If the service was created by hand instead of from the Blueprint, `render.yaml`
+does not retroactively reconfigure it — set the dashboard fields to match the
+file.
+
+### CLIENT_ORIGIN
+
+This is the variable that fails quietly rather than loudly, so it is worth
+getting right first time. It must be the GitHub Pages **origin**:
+
+```
+CLIENT_ORIGIN="https://jordyisskinny.github.io"
+```
+
+Not `https://jordyisskinny.github.io/sen371-boardgame-store/`. An origin is
+scheme, host and port only — a browser's `Origin` header never includes the
+path, so a value with the repository path in it matches nothing and the
+allowlist in `src/app.js` rejects every request from the deployed client.
+
+The symptom is specific and misleading: the client is served from `github.io`
+and the API from `onrender.com`, which browsers treat as cross-site, so the
+refresh cookie is issued `SameSite=None; Secure`. Get the origin wrong and
+login still appears to succeed — the access token is returned and held in
+memory — but the refresh cookie is never sent back, so the session dies
+silently after fifteen minutes and works perfectly on localhost the whole
+time.
+
+Multiple origins are allowed, comma-separated, which is what lets a developer
+run the client locally against the deployed API.
+
+### What the deploy workflow does
+
+Render's own auto-deploy is off (`autoDeploy: false`) because it cannot filter
+by path and would restart the API for every client-only commit, each one
+costing a free-tier cold start. Instead the workflow:
+
+1. Fails early if `RENDER_DEPLOY_HOOK_URL` or `RENDER_API_URL` is missing.
+2. POSTs the deploy hook. Render then builds from `main` itself — the runner
+   does not upload anything.
+3. Polls `/api/v1/health/ready` for up to fifteen minutes, and accepts the
+   deploy only once an instance answers `200` **and** reports an `uptime`
+   shorter than the time since the hook fired. On the free tier the old
+   instance keeps serving while the new one builds, so a bare `200` can be the
+   previous release answering; a shorter uptime proves the process restarted.
+
+When a deploy fails, the Render build log is the place to look rather than the
+Actions log — a failing `prisma migrate deploy` fails the build, so the API
+never restarts and the workflow only ever sees the old instance.
+
+### Free-tier cold starts
+
+Render suspends a free service after roughly fifteen minutes idle, and the
+next request pays around fifty seconds while it wakes. This is expected, not a
+fault. Before recording the presentation or demonstrating the live system, hit
+the readiness endpoint once and wait for `200` first.
 
 ## Project structure
 

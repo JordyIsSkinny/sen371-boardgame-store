@@ -9,4 +9,8 @@ export default defineConfig({
   base: "/sen371-boardgame-store/",
   envDir: "..",
   plugins: [react(), tailwindcss()],
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.js",
+  },
 });
