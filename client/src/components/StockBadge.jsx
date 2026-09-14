@@ -4,10 +4,8 @@ const STATUS_STYLES = {
   "out-of-stock": { tint: "bg-neutral-tint", text: "text-neutral-700" },
 };
 
-// Pure on purpose so the variant->label mapping is unit-testable later —
-// client/package.json has no test runner configured yet (no vitest/RTL,
-// only dev/build/preview scripts), so no test file is added here, but the
-// logic is kept small and isolated rather than inlined into JSX.
+// Pure on purpose so the variant->label mapping is unit-testable in isolation
+// from the JSX (see StockBadge.test.jsx).
 function label(status, count) {
   if (status === "low-stock") return count != null ? `Only ${count} left` : "Low stock";
   if (status === "out-of-stock") return "Out of stock";
