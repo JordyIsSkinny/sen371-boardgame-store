@@ -94,6 +94,10 @@ const POLICY = [
   // an uptime probe. Team-confirmed (Miles agreed on PR #83), not defaulted
   // into silently.
   { method: 'get', path: '/health', requires: PUBLIC },
+  // Readiness is public for the same reason: the uptime monitor and Render's
+  // own health check are anonymous callers. It reveals only whether the
+  // database answered, never why it did not.
+  { method: 'get', path: '/health/ready', requires: PUBLIC },
 ];
 
 /** Middleware function names, as they appear on the Express layer stack. */
