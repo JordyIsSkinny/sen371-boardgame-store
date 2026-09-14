@@ -27,10 +27,17 @@ jobs:
         working-directory: server
         run: npm ci
 
-      - name: Check JavaScript syntax
+      - name: Lint server
         working-directory: server
-        run: |
-          find src -name "*.js" -print0 | xargs -0 -n1 node --check
+        run: npm run lint
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Lint client
+        working-directory: client
+        run: npm run lint
 
   test:
     name: Test

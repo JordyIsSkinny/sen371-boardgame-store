@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   getReviewCount,
   getProductReviews,
-  createReview,
   updateReview,
   deleteReview,
 } from './review.controller.js';
