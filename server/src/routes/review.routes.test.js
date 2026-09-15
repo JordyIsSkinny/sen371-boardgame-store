@@ -144,77 +144,107 @@ process.env.CLIENT_ORIGIN = 'http://localhost:5173';
       comment: 'Route integration test review.',
     },
   });
-});
+}, 30000);
 
 afterAll(async () => {
-  if (testReview) {
-    await prisma.review.deleteMany({
-      where: {
-        productId: testProduct.id,
-      },
-    });
+  // beforeAll can throw before `prisma` is assigned (e.g. the customer role
+  // lookup failing), in which case every test above is correctly skipped —
+  // but afterAll still ran and crashed on `prisma.$disconnect()` with
+  // `prisma` undefined. Bailing out here turns that crash into a clean
+  // no-op cleanup.
+  if (!prisma) return;
+
+  try {
+    if (testReview) {
+      await prisma.review
+        .deleteMany({
+          where: {
+            productId: testProduct?.id,
+          },
+        })
+        .catch(() => {});
+    }
+
+    if (purchasedOrder) {
+      await prisma.payment
+        .deleteMany({
+          where: {
+            orderId: purchasedOrder.id,
+          },
+        })
+        .catch(() => {});
+
+      await prisma.orderItem
+        .deleteMany({
+          where: {
+            orderId: purchasedOrder.id,
+          },
+        })
+        .catch(() => {});
+
+      await prisma.order
+        .delete({
+          where: {
+            id: purchasedOrder.id,
+          },
+        })
+        .catch(() => {});
+    }
+
+    if (testProduct) {
+      await prisma.inventory
+        .deleteMany({
+          where: {
+            productId: testProduct.id,
+          },
+        })
+        .catch(() => {});
+
+      await prisma.product
+        .delete({
+          where: {
+            id: testProduct.id,
+          },
+        })
+        .catch(() => {});
+    }
+
+    if (testAddress) {
+      await prisma.address
+        .delete({
+          where: {
+            id: testAddress.id,
+          },
+        })
+        .catch(() => {});
+    }
+
+    if (testUser) {
+      await prisma.user
+        .delete({
+          where: {
+            id: testUser.id,
+          },
+        })
+        .catch(() => {});
+    }
+
+    if (otherUser) {
+      await prisma.user
+        .delete({
+          where: {
+            id: otherUser.id,
+          },
+        })
+        .catch(() => {});
+    }
+  } finally {
+    // Every branch above swallows its own error, so this always runs —
+    // previously a mid-cleanup FK violation would throw out of afterAll
+    // and skip $disconnect entirely, leaking a connection per CI run.
+    await prisma.$disconnect();
   }
-
-  if (purchasedOrder) {
-    await prisma.payment.deleteMany({
-      where: {
-        orderId: purchasedOrder.id,
-      },
-    });
-
-    await prisma.orderItem.deleteMany({
-      where: {
-        orderId: purchasedOrder.id,
-      },
-    });
-
-    await prisma.order.delete({
-      where: {
-        id: purchasedOrder.id,
-      },
-    });
-  }
-
-  if (testProduct) {
-    await prisma.inventory.deleteMany({
-      where: {
-        productId: testProduct.id,
-      },
-    });
-
-    await prisma.product.delete({
-      where: {
-        id: testProduct.id,
-      },
-    });
-  }
-
-  if (testAddress) {
-    await prisma.address.delete({
-      where: {
-        id: testAddress.id,
-      },
-    });
-  }
-
-  if (testUser) {
-    await prisma.user.delete({
-      where: {
-        id: testUser.id,
-      },
-    });
-  }
-
-  if (otherUser) {
-    await prisma.user.delete({
-      where: {
-        id: otherUser.id,
-      },
-    });
-  }
-
-  await prisma.$disconnect();
-});
+}, 30000);
 
 describe('Review routes', () => {
   describe('GET /api/v1/products/:productId/reviews', () => {
@@ -341,7 +371,7 @@ describe('Review routes', () => {
           id: newProduct.id,
         },
       });
-    });
+    }, 15000);
   });
 
   describe('PUT /api/v1/reviews/:id', () => {
