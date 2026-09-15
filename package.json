@@ -1,0 +1,16 @@
+{
+  "name": "sen371-boardgame-store-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end tests for the SEN371 Board Game Store. Lives at the repo root because a journey spans the client and the API together.",
+  "type": "module",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}
