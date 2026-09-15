@@ -16,18 +16,6 @@ let request;
 let healthRepository;
 
 beforeAll(async () => {
-  // route-protection.test.js deliberately sends a real, unmocked request to
-  // this same /health/ready route (it only asserts that the route is public,
-  // not what it returns), and health.container.js wires healthService as a
-  // module-level singleton the first time anything imports it. When Vitest
-  // reuses a worker across files, a dynamic import() can still resolve
-  // through that prior file's cached module graph instead of this file's
-  // mocked one, so the singleton here would be built from the real
-  // repository rather than the vi.mock below. resetModules() forces a fresh
-  // module graph for the import() that follows, so the mock always applies
-  // regardless of what ran in this worker before it.
-  vi.resetModules();
-
   // Same reasoning as app.test.js: config/index.js reads these at
   // module-evaluation time, so they have to be in place before app.js is
   // imported. Hence the dynamic imports below rather than static ones.
@@ -36,14 +24,21 @@ beforeAll(async () => {
   process.env.REFRESH_TOKEN_SECRET ??= "test-refresh-secret";
   process.env.CLIENT_ORIGIN ??= "http://localhost:5173";
 
-  const [{ createApp }, supertestModule, repositoryModule] = await Promise.all([
-    import("../app.js"),
-    import("supertest"),
-    import("../repositories/health.repository.js"),
-  ]);
+  // Sequential, not Promise.all: app.js's own import graph already resolves
+  // health.repository.js (through health.container.js, which builds
+  // healthService once on first import). Resolving that same specifier again
+  // here as a second, concurrent entry in Promise.all raced the two
+  // resolutions of the mocked module against each other, and occasionally
+  // let health.container.js's singleton get built against the real,
+  // unmocked repository instead (#188). Every other route test file in this
+  // suite (see products.orders.routes.test.js) awaits its dynamic imports
+  // one at a time rather than racing them — this file was the only one that
+  // didn't.
+  const { createApp } = await import("../app.js");
+  const supertestModule = await import("supertest");
+  healthRepository = await import("../repositories/health.repository.js");
 
   request = supertestModule.default;
-  healthRepository = repositoryModule;
   app = createApp();
 });
 
