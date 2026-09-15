@@ -24,14 +24,21 @@ beforeAll(async () => {
   process.env.REFRESH_TOKEN_SECRET ??= "test-refresh-secret";
   process.env.CLIENT_ORIGIN ??= "http://localhost:5173";
 
-  const [{ createApp }, supertestModule, repositoryModule] = await Promise.all([
-    import("../app.js"),
-    import("supertest"),
-    import("../repositories/health.repository.js"),
-  ]);
+  // Sequential, not Promise.all: app.js's own import graph already resolves
+  // health.repository.js (through health.container.js, which builds
+  // healthService once on first import). Resolving that same specifier again
+  // here as a second, concurrent entry in Promise.all raced the two
+  // resolutions of the mocked module against each other, and occasionally
+  // let health.container.js's singleton get built against the real,
+  // unmocked repository instead (#188). Every other route test file in this
+  // suite (see products.orders.routes.test.js) awaits its dynamic imports
+  // one at a time rather than racing them — this file was the only one that
+  // didn't.
+  const { createApp } = await import("../app.js");
+  const supertestModule = await import("supertest");
+  healthRepository = await import("../repositories/health.repository.js");
 
   request = supertestModule.default;
-  healthRepository = repositoryModule;
   app = createApp();
 });
 

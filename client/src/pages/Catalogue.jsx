@@ -3,6 +3,7 @@ import { apiClient } from "../api/client.js";
 import { Checkbox } from "../components/Checkbox.jsx";
 import { FilterChip } from "../components/FilterChip.jsx";
 import { ProductCard } from "../components/ProductCard.jsx";
+import { LoadingState } from "../components/LoadingState.jsx";
 
 // S2 Catalogue (issue #68). Rebuilt against the real Figma frame (node
 // 73:8) rather than the low-fi wireframe this was first built from — see
@@ -364,7 +365,14 @@ export function Catalogue() {
           </div>
 
           {status === "loading" && (
-            <p className="mt-8 text-neutral-500">Loading games&hellip;</p>
+            // The shared component, not an ad hoc paragraph (#154): this is
+            // the screen a visitor lands on first, and it's the one most
+            // likely to sit in a loading state for a while — Render's
+            // free-tier cold start is ~50 seconds on the first request
+            // after the API has been idle. LoadingState carries the
+            // role="status"/aria-live="polite" that tells a screen reader
+            // something is happening, which plain text does not.
+            <LoadingState message="Loading games…" />
           )}
           {status === "error" && (
             <p className="mt-8 text-red-600">

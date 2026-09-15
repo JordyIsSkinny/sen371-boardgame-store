@@ -246,6 +246,36 @@ next request pays around fifty seconds while it wakes. This is expected, not a
 fault. Before recording the presentation or demonstrating the live system, hit
 the readiness endpoint once and wait for `200` first.
 
+### Uptime monitoring
+
+An external monitor pings `GET <API_URL>/api/v1/health` every ten minutes.
+This does two things at once: it is the evidence for the project's Live
+System Availability criterion, and — since ten minutes is well under Render's
+fifteen-minute idle timeout — it keeps the free-tier instance from ever
+fully suspending during normal hours, which is the more valuable half in
+practice. It polls liveness rather than readiness deliberately: the point of
+this ping is only "is the process still up", so it should stay cheap and not
+report the API as down over a transient database blip that liveness
+correctly ignores (see the table in [Running](#running) above).
+
+Any external uptime service that can poll a URL on a schedule and record the
+history works — a free-tier account on one of them (UptimeRobot,
+Better Stack, or similar) is enough for this project's purposes.
+Configuration is the same shape for any of them:
+
+1. Monitor type: HTTP(S).
+2. URL: `<API_URL>/api/v1/health` — the same value as `RENDER_API_URL` from
+   the deployment section above, with `/api/v1/health` appended.
+3. Interval: 10 minutes.
+4. Expected response: `200` and, if the service supports matching response
+   body, `"status":"ok"`.
+5. Alerting: email or whatever the service offers, so a real outage doesn't
+   go unnoticed for the ten-minute gap between checks.
+
+For the submission, export or screenshot the monitor's uptime history and
+response-time chart once it has run for a few days — that history is what's
+citable as evidence, not the configuration itself.
+
 ## Project structure
 
 ```
