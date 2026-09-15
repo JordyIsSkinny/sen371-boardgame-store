@@ -22,7 +22,13 @@ try {
  * deployed system:
  *
  *   npm run test:e2e
- *   E2E_BASE_URL=https://jordyisskinny.github.io/sen371-boardgame-store/ npm run test:e2e
+ *   E2E_BASE_URL=https://jordyisskinny.github.io/sen371-boardgame-store/ \
+ *   E2E_API_BASE_URL=https://sen371-boardgame-store-api.onrender.com/api/v1 \
+ *   npm run test:e2e
+ *
+ * E2E_BASE_URL alone falls back to the local API for direct state
+ * arrangement and the RBAC assertion (see support/app.js), which is wrong
+ * against the deployed frontend — both variables are needed together.
  */
 
 // The trailing slash is load-bearing and so is the path. vite.config.js sets
@@ -102,9 +108,13 @@ export default defineConfig({
     // sign in as. auth.routes.js limits /auth/register and /auth/login
     // together to five requests per minute per IP, so a suite that registered
     // an account per test would exhaust that budget and fail on the
-    // application's own rate limiter — registering once here, and having
-    // journeys 3, 4 and 5 sign in through the form rather than each
-    // registering their own account, is what keeps the suite inside it.
+    // application's own rate limiter — registering the shared account once
+    // here, rather than in every journey that needs a signed-in customer, is
+    // what keeps the suite inside it. Journey 3 signs in as this shared
+    // account; journeys 4 and 5 still register their own dedicated accounts
+    // where the journey specifically needs one (see those files for why), so
+    // each of those spends one more request of the shared budget on top of
+    // this one.
     //
     // This does not save a signed-in session for the journeys to restore.
     // Restoring one does not survive this application's refresh-token
