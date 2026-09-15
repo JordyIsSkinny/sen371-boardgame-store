@@ -16,6 +16,18 @@ let request;
 let healthRepository;
 
 beforeAll(async () => {
+  // route-protection.test.js deliberately sends a real, unmocked request to
+  // this same /health/ready route (it only asserts that the route is public,
+  // not what it returns), and health.container.js wires healthService as a
+  // module-level singleton the first time anything imports it. When Vitest
+  // reuses a worker across files, a dynamic import() can still resolve
+  // through that prior file's cached module graph instead of this file's
+  // mocked one, so the singleton here would be built from the real
+  // repository rather than the vi.mock below. resetModules() forces a fresh
+  // module graph for the import() that follows, so the mock always applies
+  // regardless of what ran in this worker before it.
+  vi.resetModules();
+
   // Same reasoning as app.test.js: config/index.js reads these at
   // module-evaluation time, so they have to be in place before app.js is
   // imported. Hence the dynamic imports below rather than static ones.
