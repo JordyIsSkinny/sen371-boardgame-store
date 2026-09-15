@@ -1,5 +1,17 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// The admin journey's credentials live in the gitignored root .env, so they
+// never enter the repository. Playwright does not read .env on its own.
+// Node's own loader is used rather than adding a dotenv dependency, and a
+// missing file is deliberately not an error: CI supplies the same names as
+// real environment variables, and the admin journey is written to skip rather
+// than fail when they are absent.
+try {
+  process.loadEnvFile(".env");
+} catch {
+  // No root .env. Everything but the admin journey runs without it.
+}
+
 /**
  * End-to-end configuration. This lives at the repo root, not in client/ or
  * server/, because a journey crosses both: "add to cart and check out" is a
@@ -92,9 +104,30 @@ export default defineConfig({
   // assessed on, and three browsers would triple the run time for
   // information the project has no plan to act on.
   projects: [
+    // Runs first and registers one shared customer account the journeys can
+    // sign in as. auth.routes.js limits /auth/register and /auth/login
+    // together to five requests per minute per IP, so a suite that registered
+    // an account per test would exhaust that budget and fail on the
+    // application's own rate limiter — registering the shared account once
+    // here, rather than in every journey that needs a signed-in customer, is
+    // what keeps the suite inside it. Journey 3 signs in as this shared
+    // account; journeys 4 and 5 still register their own dedicated accounts
+    // where the journey specifically needs one (see those files for why), so
+    // each of those spends one more request of the shared budget on top of
+    // this one.
+    //
+    // This does not save a signed-in session for the journeys to restore.
+    // Restoring one does not survive this application's refresh-token
+    // rotation (#176), so every journey signs in itself; see support/app.js.
+    {
+      name: "setup",
+      testMatch: /.*\.setup\.js/,
+      use: { ...devices["Desktop Chrome"] },
+    },
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      dependencies: ["setup"],
     },
   ],
 
