@@ -98,8 +98,24 @@ export function isValidEmail(value) {
 // international format with a leading +, and numbers with spaces or dashes
 // should all pass, since rejecting a real customer's number at checkout is
 // worse than accepting a slightly malformed one.
+// Two length/content checks split out from the regex on purpose, per
+// review: the previous single regex allowed a leading + PLUS 20 more
+// characters (21 total) against a VARCHAR(20) column - a 21-char input
+// passed validation and then failed at the database as a raw Postgres
+// truncation error the app's error handler doesn't map to a clean 422.
+// It also matched pure dashes/whitespace with zero digits as "valid".
+// Checking .length directly against the column's real limit (20, +
+// included) removes the off-by-one entirely, and a separate digit check
+// closes the no-digit gap.
 export function isValidPhone(value) {
-  return typeof value === "string" && /^\+?[\d\s-]{7,20}$/.test(value.trim());
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  return (
+    trimmed.length >= 7 &&
+    trimmed.length <= 20 &&
+    /^\+?[\d\s-]+$/.test(trimmed) &&
+    /\d/.test(trimmed)
+  );
 }
 export const productIdSchema = (params) => {
   const errors = [];

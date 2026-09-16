@@ -30,6 +30,13 @@ export function Checkout() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  // Set once an address is successfully created; skips re-creating it on a
+  // retry after a failed POST /orders (e.g. stock hit zero between
+  // add-to-cart and checkout) — otherwise every retry orphaned another
+  // address row that no order ever ended up referencing. Cleared whenever
+  // the form changes, so an edited address gets created fresh rather than
+  // the order being placed against stale, already-submitted details.
+  const [createdAddressId, setCreatedAddressId] = useState(null);
 
   useEffect(() => {
     loadCart();
@@ -49,6 +56,7 @@ export function Checkout() {
 
   function updateField(field, value) {
     setAddress((prev) => ({ ...prev, [field]: value }));
+    setCreatedAddressId(null);
   }
 
   const hasRequiredAddressFields =
@@ -67,19 +75,25 @@ export function Checkout() {
     setSubmitError(null);
     setSubmitting(true);
 
-    try {
-      // userId is taken from the caller's token server-side, never from
-      // this body — same rule as every other write in this app.
-            const { data: createdAddress } = await apiClient.post("/addresses", {
-        fullName: address.fullName,
-        phone: address.phone,
-        line1: address.line1,
-        line2: address.line2 || undefined,
-        city: address.city,
-        provinceState: address.provinceState,
-        postalCode: address.postalCode,
-        country: address.country,
-      });
+     try {
+      let addressId = createdAddressId;
+
+      if (!addressId) {
+                    // userId is taken from the caller's token server-side, never from
+        // this body — same rule as every other write in this app.
+        const { data: createdAddress } = await apiClient.post("/addresses", {
+          fullName: address.fullName,
+          phone: address.phone,
+          line1: address.line1,
+          line2: address.line2 || undefined,
+          city: address.city,
+          provinceState: address.provinceState,
+          postalCode: address.postalCode,
+          country: address.country,
+        });
+        addressId = createdAddress.id;
+        setCreatedAddressId(addressId);
+      }
 
       const items = cart.items.map((item) => ({
         productId: item.productId,
@@ -87,7 +101,7 @@ export function Checkout() {
       }));
 
       const { data: order } = await apiClient.post("/orders", {
-        addressId: createdAddress.id,
+        addressId,
         items,
       });
 
