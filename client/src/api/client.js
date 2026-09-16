@@ -14,7 +14,7 @@ export function setUnauthorizedHandler(handler) {
   onUnauthorized = handler;
 }
 
-export async function refreshAccessToken() {
+async function doRefresh() {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
@@ -29,6 +29,20 @@ export async function refreshAccessToken() {
   } catch {
     return false;
   }
+}
+
+// Refresh tokens rotate on every call (docs/auth-contracts.md), so two
+// concurrent callers would each revoke the other's token and race on which
+// Set-Cookie wins — see #176. Concurrent callers share one in-flight request
+// instead of each starting their own rotation.
+let inFlightRefresh = null;
+export async function refreshAccessToken() {
+  if (!inFlightRefresh) {
+    inFlightRefresh = doRefresh().finally(() => {
+      inFlightRefresh = null;
+    });
+  }
+  return inFlightRefresh;
 }
 
 async function request(path, { method = "GET", body, retry = true } = {}) {
