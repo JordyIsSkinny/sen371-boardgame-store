@@ -86,7 +86,9 @@ export async function addToCart(request, accessToken, productId, quantity = 1) {
 export async function createAddress(request, accessToken) {
   const response = await request.post(`${API_BASE_URL}/addresses`, {
     headers: authHeaders(accessToken),
-    data: {
+       data: {
+      fullName: "Test Customer",
+      phone: "0821234567",
       line1: "12 Test Street",
       line2: "",
       city: "Pretoria",

@@ -18,7 +18,9 @@ export function Checkout() {
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
   const [status, setStatus] = useState("loading");
-  const [address, setAddress] = useState({
+   const [address, setAddress] = useState({
+    fullName: "",
+    phone: "",
     line1: "",
     line2: "",
     city: "",
@@ -50,6 +52,8 @@ export function Checkout() {
   }
 
   const hasRequiredAddressFields =
+    address.fullName.trim() !== "" &&
+    address.phone.trim() !== "" &&
     address.line1.trim() !== "" &&
     address.city.trim() !== "" &&
     address.provinceState.trim() !== "" &&
@@ -66,7 +70,9 @@ export function Checkout() {
     try {
       // userId is taken from the caller's token server-side, never from
       // this body — same rule as every other write in this app.
-      const { data: createdAddress } = await apiClient.post("/addresses", {
+            const { data: createdAddress } = await apiClient.post("/addresses", {
+        fullName: address.fullName,
+        phone: address.phone,
         line1: address.line1,
         line2: address.line2 || undefined,
         city: address.city,
@@ -130,6 +136,16 @@ export function Checkout() {
           <h2 className="text-h4 font-heading text-primary-900">Delivery address</h2>
 
           <div className="mt-4 flex flex-col gap-4">
+                      <Input
+              placeholder="Full name"
+              value={address.fullName}
+              onChange={(e) => updateField("fullName", e.target.value)}
+            />
+            <Input
+              placeholder="Phone number"
+              value={address.phone}
+              onChange={(e) => updateField("phone", e.target.value)}
+            />
             <Input
               placeholder="Address line 1"
               value={address.line1}
