@@ -93,6 +93,14 @@ export function isValidEnum(value, allowedValues) {
 export function isValidEmail(value) {
   return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
+// Lenient on purpose: this only guards against obviously-wrong input (empty,
+// letters), not a specific country's numbering plan — South African numbers,
+// international format with a leading +, and numbers with spaces or dashes
+// should all pass, since rejecting a real customer's number at checkout is
+// worse than accepting a slightly malformed one.
+export function isValidPhone(value) {
+  return typeof value === "string" && /^\+?[\d\s-]{7,20}$/.test(value.trim());
+}
 export const productIdSchema = (params) => {
   const errors = [];
 
@@ -393,6 +401,16 @@ export const productQuerySchema = (query) => {
 };
 export const createAddressSchema = (body) => {
   const errors = [];
+
+  if (!isNonEmptyString(body.fullName)) {
+    errors.push({ field: "fullName", message: "Full name is required." });
+  } else if (!isValidStringLength(body.fullName, 255)) {
+    errors.push({ field: "fullName", message: "Full name must not exceed 255 characters." });
+  }
+
+  if (!isValidPhone(body.phone)) {
+    errors.push({ field: "phone", message: "A valid phone number is required." });
+  }
 
   if (!isNonEmptyString(body.line1)) {
     errors.push({ field: "line1", message: "Address line 1 is required." });
