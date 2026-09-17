@@ -128,7 +128,7 @@ export function Home() {
             clearing the table for
           </h1>
           <p className="mt-4 max-w-xl text-body-lg text-primary-300">
-            Strategy, family and co-operative board games — filtered by player count, playtime and
+            Strategy, family and co-operative board games – filtered by player count, playtime and
             complexity, so you find the right one first time.
           </p>
           <Link

@@ -407,7 +407,7 @@ export function ProductDetail() {
           {activeTab === "Reviews" && (
             <div>
               {reviews.length === 0 && (
-                <p className="text-neutral-500">No reviews yet — be the first to play and review it.</p>
+                <p className="text-neutral-500">No reviews yet – be the first to play and review it.</p>
               )}
 
               <ul className="flex flex-col gap-4">

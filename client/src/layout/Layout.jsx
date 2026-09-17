@@ -99,7 +99,7 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="border-t border-neutral-200 p-4 text-center text-sm text-neutral-500">
-        SEN371 — One More Game
+        SEN371 – One More Game
       </footer>
     </div>
   );
