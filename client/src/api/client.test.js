@@ -88,4 +88,25 @@ describe("refreshAccessToken", () => {
       vi.useRealTimers();
     }
   });
+
+  it("runs directly when the Web Locks API isn't available (jsdom has no navigator.locks)", async () => {
+    const fetchMock = stubFetch(() => Promise.resolve(jsonResponse({ data: { accessToken: "token-4" } })));
+
+    const result = await refreshAccessToken();
+
+    expect(result).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("serializes the refresh through navigator.locks when available (#199)", async () => {
+    const fetchMock = stubFetch(() => Promise.resolve(jsonResponse({ data: { accessToken: "token-5" } })));
+    const lockRequest = vi.fn((_name, callback) => callback());
+    vi.stubGlobal("navigator", { locks: { request: lockRequest } });
+
+    const result = await refreshAccessToken();
+
+    expect(lockRequest).toHaveBeenCalledWith("auth-refresh", expect.any(Function));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result).toBe(true);
+  });
 });
