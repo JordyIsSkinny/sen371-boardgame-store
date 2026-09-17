@@ -1,4 +1,4 @@
-# SEN371 — Board Game Store
+# SEN371 – Board Game Store
 
 Full-stack e-commerce web application for a single-seller board game retailer, built for Software Engineering 371 at Belgium Campus.
 
@@ -15,7 +15,7 @@ Full-stack e-commerce web application for a single-seller board game retailer, b
 
 ## Design
 
-High-fidelity prototype and component library: [Figma](https://www.figma.com/design/9jaB1VepWpkM3Anp6xI4V5/SEN371-%E2%80%93-Board-Game-Store?node-id=65-6&t=wRJR2kw9014NKdgM-1) (view-only). Design tokens are documented in [`docs/design-system.md`](docs/design-system.md) and implemented as Tailwind's `@theme` block in `client/src/index.css` — where the two disagree, Figma is the source of truth.
+High-fidelity prototype and component library: [Figma](https://www.figma.com/design/9jaB1VepWpkM3Anp6xI4V5/SEN371-%E2%80%93-Board-Game-Store?node-id=65-6&t=wRJR2kw9014NKdgM-1) (view-only). Design tokens are documented in [`docs/design-system.md`](docs/design-system.md) and implemented as Tailwind's `@theme` block in `client/src/index.css` – where the two disagree, Figma is the source of truth.
 
 ## Prerequisites
 
@@ -41,18 +41,14 @@ cd ../client && npm install
 cd ..
 ```
 
-Copy the environment template and fill in your own values. It needs to exist
-in **two** places — once at the repo root (Vite reads the client's
-`VITE_API_BASE_URL` from there, not from inside `client/` — see
-`client/vite.config.js`'s `envDir`), and once inside `server/` for the API's
-own vars:
+Copy the environment template and fill in your own values. It needs to exist in **two** places – once at the repo root (Vite reads the client's `VITE_API_BASE_URL` from there, not from inside `client/` – see `client/vite.config.js`'s `envDir`), and once inside `server/` for the API's own vars:
 
 ```bash
 cp .env.example .env
 cp .env.example server/.env
 ```
 
-Generate the two token secrets — they must be different from each other:
+Generate the two token secrets – they must be different from each other:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -71,17 +67,16 @@ npx prisma db seed
 Two terminals:
 
 ```bash
-# terminal 1 — API on http://localhost:3000
+# terminal 1 - API on http://localhost:3000
 cd server && npm run dev
 ```
 
 ```bash
-# terminal 2 — client on http://localhost:5173
+# terminal 2 - client on http://localhost:5173
 cd client && npm run dev
 ```
 
-The API exposes two health endpoints, and the difference matters when
-something is broken:
+The API exposes two health endpoints, and the difference matters when something is broken:
 
 | Endpoint | Answers | Touches the database |
 |---|---|---|
@@ -92,20 +87,18 @@ something is broken:
 curl http://localhost:3000/api/v1/health/ready
 ```
 
-Readiness answers `200` with `"database": "connected"`, or `503` with
-`"status": "degraded"` when the database is unreachable. Liveness stays `200`
-either way — Render restarts an instance whose liveness check fails, and
-restarting the API cannot repair a database.
+Readiness answers `200` with `"database": "connected"`, or `503` with `"status": "degraded"` when the database is unreachable. Liveness stays `200` either way – Render restarts an instance whose liveness check fails, and restarting the API cannot repair a database.
 
 ## Testing
 
 ```bash
-cd server && npm test        # API unit and integration tests
+cd server && npm test             # API unit and integration tests
+cd server && npm run test:coverage # same, with a coverage report
+cd client && npm test              # component tests (Vitest + Testing Library)
+npm run test:e2e                   # Playwright, from the repo root - needs both dev servers running
 ```
 
-The client has no automated test runner configured — frontend changes are
-verified manually against a running dev server rather than with component
-tests.
+The Playwright suite drives a real browser against a real running client and API (see `docs/e2e-testing.md` for the full setup and the shared-database caveats), so it needs `npm run dev` already running in both `client/` and `server/` before you run it, not just a clean checkout.
 
 ## Deployment
 
@@ -115,44 +108,24 @@ tests.
 | API | Render | `.github/workflows/deploy-server.yml`, on pushes touching `server/**` |
 | Database | Neon | `prisma migrate deploy`, inside Render's build command |
 
-Both workflows also accept a manual run (Actions > the workflow > Run
-workflow), which is how you redeploy without an empty commit.
+Both workflows also accept a manual run (Actions > the workflow > Run workflow), which is how you redeploy without an empty commit.
 
 ### Creating the Render service
 
-Done once, by hand. `render.yaml` holds the build command, start command and
-health check path so they are reviewable in the repository rather than living
-only in a dashboard.
+Done once, by hand. `render.yaml` holds the build command, start command and health check path so they are reviewable in the repository rather than living only in a dashboard.
 
-1. In Render, **New > Blueprint** and select this repository. Render reads
-   `render.yaml` and proposes the service: root directory `server`, free plan,
-   Frankfurt region, health check `/api/v1/health`.
-2. Render prompts for the variables marked `sync: false` — the two database
-   URLs, the two token secrets, and `CLIENT_ORIGIN`. Fill them in from
-   `.env.example`, with **production** values, not the local ones.
-3. Copy the service URL (`https://<name>.onrender.com`). It is needed twice
-   more, in steps 4 and 6.
-4. **Settings > Deploy Hook** on the service, copy the URL, and add it to
-   GitHub as the repository secret `RENDER_DEPLOY_HOOK_URL` (Settings >
-   Secrets and variables > Actions > Secrets). It is a secret because anyone
-   holding the URL can trigger a deploy.
-5. Add the repository **variable** `RENDER_API_URL` (same page, Variables tab)
-   set to the service URL with no trailing slash. A variable rather than a
-   secret so the deploy log shows which host it polled.
-6. Add the repository variable `VITE_API_BASE_URL` set to
-   `https://<name>.onrender.com/api/v1`, then re-run the Pages workflow. The
-   client build bakes this in at build time, so until it is set and the client
-   is rebuilt, the deployed site loads but every API call fails.
+1. In Render, **New > Blueprint** and select this repository. Render reads `render.yaml` and proposes the service: root directory `server`, free plan, Frankfurt region, health check `/api/v1/health`.
+2. Render prompts for the variables marked `sync: false` – the two database URLs, the two token secrets, and `CLIENT_ORIGIN`. Fill them in from `.env.example`, with **production** values, not the local ones.
+3. Copy the service URL (`https://<name>.onrender.com`). It is needed twice more, in steps 4 and 6.
+4. **Settings > Deploy Hook** on the service, copy the URL, and add it to GitHub as the repository secret `RENDER_DEPLOY_HOOK_URL` (Settings > Secrets and variables > Actions > Secrets). It is a secret because anyone holding the URL can trigger a deploy.
+5. Add the repository **variable** `RENDER_API_URL` (same page, Variables tab) set to the service URL with no trailing slash. A variable rather than a secret so the deploy log shows which host it polled.
+6. Add the repository variable `VITE_API_BASE_URL` set to `https://<name>.onrender.com/api/v1`, then re-run the Pages workflow. The client build bakes this in at build time, so until it is set and the client is rebuilt, the deployed site loads but every API call fails.
 
-If the service was created by hand instead of from the Blueprint, `render.yaml`
-does not retroactively reconfigure it — set the dashboard fields to match the
-file.
+If the service was created by hand instead of from the Blueprint, `render.yaml` does not retroactively reconfigure it – set the dashboard fields to match the file.
 
 ### Production environment variables
 
-Nine variables, set in three different places. The middle column is the one
-to get right — putting a secret in `render.yaml` would commit it, and setting
-`PORT` by hand breaks the service.
+Nine variables, set in three different places. The middle column is the one to get right – putting a secret in `render.yaml` would commit it, and setting `PORT` by hand breaks the service.
 
 | Variable | Set in | Production value |
 |---|---|---|
@@ -166,115 +139,59 @@ to get right — putting a secret in `render.yaml` would commit it, and setting
 | `REFRESH_TOKEN_EXPIRES_IN` | `render.yaml` | `7d` |
 | `PORT` | Render, automatically | Do not set it |
 
-**The two database URLs are not interchangeable.** `DATABASE_URL` takes the
-pooled string (the host containing `-pooler`) because Prisma opens a
-connection pool per instance and Neon's free tier caps direct connections.
-`DIRECT_URL` takes the unpooled one because `prisma migrate deploy`, which runs
-in Render's build command, needs a session it can hold open — run through the
-pooler it fails partway, and a half-applied migration is the worst outcome
-available. `schema.prisma` already declares both.
+**The two database URLs are not interchangeable.** `DATABASE_URL` takes the pooled string (the host containing `-pooler`) because Prisma opens a connection pool per instance and Neon's free tier caps direct connections. `DIRECT_URL` takes the unpooled one because `prisma migrate deploy`, which runs in Render's build command, needs a session it can hold open – run through the pooler it fails partway, and a half-applied migration is the worst outcome available. `schema.prisma` already declares both.
 
-**Generate the two secrets fresh rather than copying them out of a local
-`.env`.** The development secrets exist in four working copies and a synced
-OneDrive folder; reusing one means a token minted on any of those machines is
-valid against production. `config/index.js` refuses to start if the two match
-each other, but nothing can detect that they were reused.
+**Generate the two secrets fresh rather than copying them out of a local `.env`.** The development secrets exist in four working copies and a synced OneDrive folder; reusing one means a token minted on any of those machines is valid against production. `config/index.js` refuses to start if the two match each other, but nothing can detect that they were reused.
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-**`NODE_ENV=production` is load-bearing, not cosmetic.** It is what sets
-`Secure` and `SameSite=None` on the refresh cookie in `auth.controller.js`,
-without which the cross-site cookie is rejected outright by the browser. It
-also drops Prisma's query logging, which would otherwise write every query to
-Render's logs.
+**`NODE_ENV=production` is load-bearing, not cosmetic.** It is what sets `Secure` and `SameSite=None` on the refresh cookie in `auth.controller.js`, without which the cross-site cookie is rejected outright by the browser. It also drops Prisma's query logging, which would otherwise write every query to Render's logs.
 
-Changing any variable in the Render dashboard restarts the service on its own;
-no redeploy is needed. Point `DATABASE_URL` at a database whose migrations
-have not been applied, though, and the restart succeeds while every request
-fails — the build step that runs migrations does not re-run on a restart.
+Changing any variable in the Render dashboard restarts the service on its own; no redeploy is needed. Point `DATABASE_URL` at a database whose migrations have not been applied, though, and the restart succeeds while every request fails – the build step that runs migrations does not re-run on a restart.
 
 ### CLIENT_ORIGIN
 
-This is the variable that fails quietly rather than loudly, so it is worth
-getting right first time. It must be the GitHub Pages **origin**:
+This is the variable that fails quietly rather than loudly, so it is worth getting right first time. It must be the GitHub Pages **origin**:
 
 ```
 CLIENT_ORIGIN="https://jordyisskinny.github.io"
 ```
 
-Not `https://jordyisskinny.github.io/sen371-boardgame-store/`. An origin is
-scheme, host and port only — a browser's `Origin` header never includes the
-path, so a value with the repository path in it matches nothing and the
-allowlist in `src/app.js` rejects every request from the deployed client.
+Not `https://jordyisskinny.github.io/sen371-boardgame-store/`. An origin is scheme, host and port only – a browser's `Origin` header never includes the path, so a value with the repository path in it matches nothing and the allowlist in `src/app.js` rejects every request from the deployed client.
 
-The symptom is specific and misleading: the client is served from `github.io`
-and the API from `onrender.com`, which browsers treat as cross-site, so the
-refresh cookie is issued `SameSite=None; Secure`. Get the origin wrong and
-login still appears to succeed — the access token is returned and held in
-memory — but the refresh cookie is never sent back, so the session dies
-silently after fifteen minutes and works perfectly on localhost the whole
-time.
+The symptom is specific and misleading: the client is served from `github.io` and the API from `onrender.com`, which browsers treat as cross-site, so the refresh cookie is issued `SameSite=None; Secure`. Get the origin wrong and login still appears to succeed – the access token is returned and held in memory – but the refresh cookie is never sent back, so the session dies silently after fifteen minutes and works perfectly on localhost the whole time.
 
-Multiple origins are allowed, comma-separated, which is what lets a developer
-run the client locally against the deployed API.
+Multiple origins are allowed, comma-separated, which is what lets a developer run the client locally against the deployed API.
 
 ### What the deploy workflow does
 
-Render's own auto-deploy is off (`autoDeploy: false`) because it cannot filter
-by path and would restart the API for every client-only commit, each one
-costing a free-tier cold start. Instead the workflow:
+Render's own auto-deploy is off (`autoDeploy: false`) because it cannot filter by path and would restart the API for every client-only commit, each one costing a free-tier cold start. Instead the workflow:
 
 1. Fails early if `RENDER_DEPLOY_HOOK_URL` or `RENDER_API_URL` is missing.
-2. POSTs the deploy hook. Render then builds from `main` itself — the runner
-   does not upload anything.
-3. Polls `/api/v1/health/ready` for up to fifteen minutes, and accepts the
-   deploy only once an instance answers `200` **and** reports an `uptime`
-   shorter than the time since the hook fired. On the free tier the old
-   instance keeps serving while the new one builds, so a bare `200` can be the
-   previous release answering; a shorter uptime proves the process restarted.
+2. POSTs the deploy hook. Render then builds from `main` itself – the runner does not upload anything.
+3. Polls `/api/v1/health/ready` for up to fifteen minutes, and accepts the deploy only once an instance answers `200` **and** reports an `uptime` shorter than the time since the hook fired. On the free tier the old instance keeps serving while the new one builds, so a bare `200` can be the previous release answering; a shorter uptime proves the process restarted.
 
-When a deploy fails, the Render build log is the place to look rather than the
-Actions log — a failing `prisma migrate deploy` fails the build, so the API
-never restarts and the workflow only ever sees the old instance.
+When a deploy fails, the Render build log is the place to look rather than the Actions log – a failing `prisma migrate deploy` fails the build, so the API never restarts and the workflow only ever sees the old instance.
 
 ### Free-tier cold starts
 
-Render suspends a free service after roughly fifteen minutes idle, and the
-next request pays around fifty seconds while it wakes. This is expected, not a
-fault. Before recording the presentation or demonstrating the live system, hit
-the readiness endpoint once and wait for `200` first.
+Render suspends a free service after roughly fifteen minutes idle, and the next request pays around fifty seconds while it wakes. This is expected, not a fault. Before recording the presentation or demonstrating the live system, hit the readiness endpoint once and wait for `200` first.
 
 ### Uptime monitoring
 
-An external monitor pings `GET <API_URL>/api/v1/health` every ten minutes.
-This does two things at once: it is the evidence for the project's Live
-System Availability criterion, and — since ten minutes is well under Render's
-fifteen-minute idle timeout — it keeps the free-tier instance from ever
-fully suspending during normal hours, which is the more valuable half in
-practice. It polls liveness rather than readiness deliberately: the point of
-this ping is only "is the process still up", so it should stay cheap and not
-report the API as down over a transient database blip that liveness
-correctly ignores (see the table in [Running](#running) above).
+An external monitor pings `GET <API_URL>/api/v1/health` every ten minutes. This does two things at once: it is the evidence for the project's Live System Availability criterion, and, since ten minutes is well under Render's fifteen-minute idle timeout, it keeps the free-tier instance from ever fully suspending during normal hours, which is the more valuable half in practice. It polls liveness rather than readiness deliberately: the point of this ping is only "is the process still up", so it should stay cheap and not report the API as down over a transient database blip that liveness correctly ignores (see the table in [Running](#running) above).
 
-Any external uptime service that can poll a URL on a schedule and record the
-history works — a free-tier account on one of them (UptimeRobot,
-Better Stack, or similar) is enough for this project's purposes.
-Configuration is the same shape for any of them:
+Any external uptime service that can poll a URL on a schedule and record the history works – a free-tier account on one of them (UptimeRobot, Better Stack, or similar) is enough for this project's purposes. Configuration is the same shape for any of them:
 
 1. Monitor type: HTTP(S).
-2. URL: `<API_URL>/api/v1/health` — the same value as `RENDER_API_URL` from
-   the deployment section above, with `/api/v1/health` appended.
+2. URL: `<API_URL>/api/v1/health` – the same value as `RENDER_API_URL` from the deployment section above, with `/api/v1/health` appended.
 3. Interval: 10 minutes.
-4. Expected response: `200` and, if the service supports matching response
-   body, `"status":"ok"`.
-5. Alerting: email or whatever the service offers, so a real outage doesn't
-   go unnoticed for the ten-minute gap between checks.
+4. Expected response: `200` and, if the service supports matching response body, `"status":"ok"`.
+5. Alerting: email or whatever the service offers, so a real outage doesn't go unnoticed for the ten-minute gap between checks.
 
-For the submission, export or screenshot the monitor's uptime history and
-response-time chart once it has run for a few days — that history is what's
-citable as evidence, not the configuration itself.
+For the submission, export or screenshot the monitor's uptime history and response-time chart once it has run for a few days – that history is what's citable as evidence, not the configuration itself.
 
 ## Project structure
 
@@ -292,13 +209,13 @@ server/prisma/       schema, migrations, seed data
 docs/                ERD, architecture diagrams, API specification
 ```
 
-Controllers never access the database directly — they call services, which use repositories.
+Controllers never access the database directly – they call services, which use repositories.
 
 ## Contributing
 
 Branch from an up-to-date `main`. Never commit to `main` directly.
 
-**Branch naming:** `<type>/<issue-key>-<description>` — e.g. `feature/SEN371-14-product-filters`
+**Branch naming:** `<type>/<issue-key>-<description>` – e.g. `feature/SEN371-14-product-filters`
 Types: `feature` `bugfix` `hotfix` `test` `docs` `chore`
 
 **Commits** follow [Conventional Commits](https://www.conventionalcommits.org):
