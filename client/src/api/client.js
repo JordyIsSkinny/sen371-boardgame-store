@@ -14,11 +14,20 @@ export function setUnauthorizedHandler(handler) {
   onUnauthorized = handler;
 }
 
-export async function refreshAccessToken() {
+// Render's free-tier cold start pays roughly fifty seconds (docs/e2e-testing.md),
+// so this needs to be generous — but now that the request is shared by every
+// concurrent caller (see refreshAccessToken below), a hang has to be bounded or
+// it blocks all of them instead of just the one that triggered it.
+const REFRESH_TIMEOUT_MS = 60_000;
+
+async function doRefresh() {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REFRESH_TIMEOUT_MS);
   try {
     const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
       credentials: "include",
+      signal: controller.signal,
     });
     if (!response.ok) return false;
     // Every endpoint responds { data: ... } (team decision, issue #51 —
@@ -28,7 +37,23 @@ export async function refreshAccessToken() {
     return true;
   } catch {
     return false;
+  } finally {
+    clearTimeout(timeoutId);
   }
+}
+
+// Refresh tokens rotate on every call (docs/auth-contracts.md), so two
+// concurrent callers would each revoke the other's token and race on which
+// Set-Cookie wins — see #176. Concurrent callers share one in-flight request
+// instead of each starting their own rotation.
+let inFlightRefresh = null;
+export async function refreshAccessToken() {
+  if (!inFlightRefresh) {
+    inFlightRefresh = doRefresh().finally(() => {
+      inFlightRefresh = null;
+    });
+  }
+  return inFlightRefresh;
 }
 
 async function request(path, { method = "GET", body, retry = true } = {}) {

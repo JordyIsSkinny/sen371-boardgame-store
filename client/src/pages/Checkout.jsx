@@ -79,13 +79,17 @@ export function Checkout() {
       let addressId = createdAddressId;
 
       if (!addressId) {
-                    // userId is taken from the caller's token server-side, never from
+        // userId is taken from the caller's token server-side, never from
         // this body — same rule as every other write in this app.
+        const trimmedLine2 = address.line2.trim();
         const { data: createdAddress } = await apiClient.post("/addresses", {
           fullName: address.fullName,
           phone: address.phone,
           line1: address.line1,
-          line2: address.line2 || undefined,
+          // .trim() first: a whitespace-only line2 (e.g. a single space)
+          // is truthy, so a bare `|| undefined` wouldn't catch it and a
+          // blank-looking value would get persisted as real content.
+          line2: trimmedLine2 || undefined,
           city: address.city,
           provinceState: address.provinceState,
           postalCode: address.postalCode,

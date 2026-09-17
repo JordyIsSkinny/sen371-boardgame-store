@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '../lib/prismaClient.js';
 import { createOrder, getOrdersByUser, getOrderById, getAllOrders, updateOrderStatus } from './order.repository.js';
+import NotFoundError from '../errors/not-found-error.js';
+import ConflictError from '../errors/conflict-error.js';
 
 let testUser, testRole, testProduct, testAddress;
 
@@ -80,14 +82,82 @@ describe('createOrder', () => {
     15000
   );
 
-  it('throws when requested quantity exceeds stock', async () => {
+  it('throws a ConflictError when requested quantity exceeds stock', async () => {
     await expect(
       createOrder({
         userId: testUser.id,
         addressId: testAddress.id,
         items: [{ productId: testProduct.id, quantity: 999 }],
       })
-    ).rejects.toThrow();
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it('throws a NotFoundError for a product that does not exist', async () => {
+    await expect(
+      createOrder({
+        userId: testUser.id,
+        addressId: testAddress.id,
+        items: [{ productId: 999999999, quantity: 1 }],
+      })
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it('clears the matching cart items after a successful order', async () => {
+    const cartItem = await prisma.cartItem.create({
+      data: {
+        userId: testUser.id,
+        productId: testProduct.id,
+        quantity: 1,
+      },
+    });
+
+    await createOrder({
+      userId: testUser.id,
+      addressId: testAddress.id,
+      items: [{ productId: testProduct.id, quantity: 1 }],
+    });
+
+    const remaining = await prisma.cartItem.findUnique({ where: { id: cartItem.id } });
+    expect(remaining).toBeNull();
+  });
+
+  it('leaves cart items for other products untouched', async () => {
+    const otherProduct = await prisma.product.create({
+      data: {
+        title: 'Untouched Cart Item Product',
+        slug: `untouched-cart-item-${Date.now()}`,
+        minPlayers: 2,
+        maxPlayers: 4,
+        playTimeMinutes: 30,
+        minAge: 8,
+        complexityRating: 1.5,
+        price: 200.0,
+        inventory: { create: { quantityOnHand: 10 } },
+      },
+    });
+
+    const untouchedCartItem = await prisma.cartItem.create({
+      data: {
+        userId: testUser.id,
+        productId: otherProduct.id,
+        quantity: 1,
+      },
+    });
+
+    try {
+      await createOrder({
+        userId: testUser.id,
+        addressId: testAddress.id,
+        items: [{ productId: testProduct.id, quantity: 1 }],
+      });
+
+      const stillThere = await prisma.cartItem.findUnique({ where: { id: untouchedCartItem.id } });
+      expect(stillThere).not.toBeNull();
+    } finally {
+      await prisma.cartItem.deleteMany({ where: { productId: otherProduct.id } });
+      await prisma.inventory.deleteMany({ where: { productId: otherProduct.id } });
+      await prisma.product.delete({ where: { id: otherProduct.id } });
+    }
   });
 });
 
