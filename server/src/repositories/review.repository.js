@@ -66,6 +66,22 @@ export async function getReviewById(id) {
 // on every write instead. Always called inside the same transaction as the
 // review write it follows, so the two can never drift out of sync - if the
 // recompute fails, the review write rolls back with it.
+//
+// lockProductRow is always called BEFORE the review-table write in this
+// same transaction, never after - not just before the aggregate read.
+// Locking after the write deadlocks: inserting a review implicitly takes a
+// FOR KEY SHARE lock on the referenced product row (Postgres protecting the
+// foreign key), so if two concurrent writes on the same product both
+// insert first and then try to upgrade to FOR UPDATE, each already holds
+// the lock the other is waiting to acquire - a real AB-BA deadlock,
+// confirmed while testing this (Postgres error 40P01), not a theoretical
+// concern. Locking first means this transaction's own later FOR KEY SHARE
+// never conflicts with itself, and a second transaction arriving after
+// this one just waits cleanly for the lock to release, no cycle possible.
+async function lockProductRow(tx, productId) {
+  await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`;
+}
+
 async function recomputeProductRating(tx, productId) {
   const aggregate = await tx.review.aggregate({
     where: { productId },
@@ -91,6 +107,8 @@ export async function createReview({
   comment,
 }) {
   return prisma.$transaction(async (tx) => {
+    await lockProductRow(tx, productId);
+
     const review = await tx.review.create({
       data: {
         userId,
@@ -108,6 +126,11 @@ export async function createReview({
 
 export async function updateReview(id, userId, data) {
   return prisma.$transaction(async (tx) => {
+    const existing = await tx.review.findUnique({ where: { id }, select: { productId: true } });
+    if (existing) {
+      await lockProductRow(tx, existing.productId);
+    }
+
     const review = await tx.review.update({
       where: {
         id,
@@ -123,6 +146,11 @@ export async function updateReview(id, userId, data) {
 }
 export async function updateReviewAsAdmin(id, data) {
   return prisma.$transaction(async (tx) => {
+    const existing = await tx.review.findUnique({ where: { id }, select: { productId: true } });
+    if (existing) {
+      await lockProductRow(tx, existing.productId);
+    }
+
     const review = await tx.review.update({
       where: {
         id,
@@ -137,6 +165,11 @@ export async function updateReviewAsAdmin(id, data) {
 }
 export async function deleteReview(id, userId) {
   return prisma.$transaction(async (tx) => {
+    const existing = await tx.review.findUnique({ where: { id }, select: { productId: true } });
+    if (existing) {
+      await lockProductRow(tx, existing.productId);
+    }
+
     const review = await tx.review.delete({
       where: {
         id,
@@ -151,6 +184,11 @@ export async function deleteReview(id, userId) {
 }
 export async function deleteReviewAsAdmin(id) {
   return prisma.$transaction(async (tx) => {
+    const existing = await tx.review.findUnique({ where: { id }, select: { productId: true } });
+    if (existing) {
+      await lockProductRow(tx, existing.productId);
+    }
+
     const review = await tx.review.delete({
       where: {
         id,

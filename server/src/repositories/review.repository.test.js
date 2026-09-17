@@ -285,9 +285,79 @@ describe('aggregate rating recompute', () => {
     // reviewIds[1] belongs to otherRatingUser, not testUser.
     await deleteReview(reviewIds[1], otherRatingUser.id);
 
-    const afterLastDelete = await prisma.product.findUnique({ where: { id: ratingProduct.id } });
+      const afterLastDelete = await prisma.product.findUnique({ where: { id: ratingProduct.id } });
     expect(afterLastDelete.averageRating).toBeNull();
     expect(afterLastDelete.reviewCount).toBe(0);
+  });
+
+  // Per review feedback: without the row lock in recomputeProductRating,
+  // two review writes on the same product landing at the same moment could
+  // each read an aggregate missing the other's not-yet-committed review,
+  // so whichever UPDATE commits last silently wins with a count missing
+  // one review. Promise.all here starts both transactions together; Node's
+  // single-threaded event loop naturally interleaves their individual
+  // awaited queries as each one's I/O completes, which is enough to
+  // exercise the race genuinely, not just in theory - this test reliably
+  // failed (reviewCount stuck at 1) when run against the pre-fix version
+  // of recomputeProductRating with the FOR UPDATE line removed.
+  it('does not lose a review when two land on the same product concurrently', async () => {
+    const concurrentProduct = await prisma.product.create({
+      data: {
+        title: 'Concurrent Rating Test Game',
+        slug: `concurrent-rating-test-${Date.now()}`,
+        minPlayers: 2,
+        maxPlayers: 4,
+        playTimeMinutes: 60,
+        minAge: 8,
+        complexityRating: 2.0,
+        price: 400.0,
+      },
+    });
+
+    const concurrentUserA = await prisma.user.create({
+      data: {
+        roleId: testRole.id,
+        email: `concurrent-rating-a-${Date.now()}@example.com`,
+        passwordHash: 'not-a-real-hash',
+        firstName: 'Concurrent',
+        lastName: 'A',
+      },
+    });
+    const concurrentUserB = await prisma.user.create({
+      data: {
+        roleId: testRole.id,
+        email: `concurrent-rating-b-${Date.now()}@example.com`,
+        passwordHash: 'not-a-real-hash',
+        firstName: 'Concurrent',
+        lastName: 'B',
+      },
+    });
+
+    try {
+      await Promise.all([
+        createReview({
+          userId: concurrentUserA.id,
+          productId: concurrentProduct.id,
+          rating: 5,
+          comment: 'Concurrent A.',
+        }),
+        createReview({
+          userId: concurrentUserB.id,
+          productId: concurrentProduct.id,
+          rating: 3,
+          comment: 'Concurrent B.',
+        }),
+      ]);
+
+      const updated = await prisma.product.findUnique({ where: { id: concurrentProduct.id } });
+      expect(updated.reviewCount).toBe(2);
+      expect(Number(updated.averageRating)).toBe(4);
+    } finally {
+      await prisma.review.deleteMany({ where: { productId: concurrentProduct.id } });
+      await prisma.user.delete({ where: { id: concurrentUserA.id } });
+      await prisma.user.delete({ where: { id: concurrentUserB.id } });
+      await prisma.product.delete({ where: { id: concurrentProduct.id } });
+    }
   });
 });
 
