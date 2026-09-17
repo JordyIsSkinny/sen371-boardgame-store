@@ -69,4 +69,23 @@ describe("refreshAccessToken", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it("aborts and returns false if the request hangs past the timeout", async () => {
+    vi.useFakeTimers();
+    try {
+      stubFetch(
+        (_url, { signal }) =>
+          new Promise((_resolve, reject) => {
+            signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+          }),
+      );
+
+      const result = refreshAccessToken();
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(await result).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
