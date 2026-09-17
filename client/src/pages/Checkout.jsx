@@ -26,8 +26,15 @@ export function Checkout() {
     postalCode: "",
     country: "South Africa",
   });
-  const [submitting, setSubmitting] = useState(false);
+   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  // Set once an address is successfully created; skips re-creating it on a
+  // retry after a failed POST /orders (e.g. stock hit zero between
+  // add-to-cart and checkout) — otherwise every retry orphaned another
+  // address row that no order ever ended up referencing. Cleared whenever
+  // the form changes, so an edited address gets created fresh rather than
+  // the order being placed against stale, already-submitted details.
+  const [createdAddressId, setCreatedAddressId] = useState(null);
 
   useEffect(() => {
     loadCart();
@@ -47,8 +54,8 @@ export function Checkout() {
 
   function updateField(field, value) {
     setAddress((prev) => ({ ...prev, [field]: value }));
+    setCreatedAddressId(null);
   }
-
   const hasRequiredAddressFields =
     address.line1.trim() !== "" &&
     address.city.trim() !== "" &&
@@ -63,17 +70,27 @@ export function Checkout() {
     setSubmitError(null);
     setSubmitting(true);
 
-    try {
-      // userId is taken from the caller's token server-side, never from
-      // this body — same rule as every other write in this app.
-      const { data: createdAddress } = await apiClient.post("/addresses", {
-        line1: address.line1,
-        line2: address.line2 || undefined,
-        city: address.city,
-        provinceState: address.provinceState,
-        postalCode: address.postalCode,
-        country: address.country,
-      });
+     try {
+      let addressId = createdAddressId;
+
+      if (!addressId) {
+        // userId is taken from the caller's token server-side, never from
+        // this body — same rule as every other write in this app.
+        const trimmedLine2 = address.line2.trim();
+        const { data: createdAddress } = await apiClient.post("/addresses", {
+          line1: address.line1,
+          // .trim() first: a whitespace-only line2 (e.g. a single space)
+          // is truthy, so a bare `|| undefined` wouldn't catch it and a
+          // blank-looking value would get persisted as real content.
+          line2: trimmedLine2 || undefined,
+          city: address.city,
+          provinceState: address.provinceState,
+          postalCode: address.postalCode,
+          country: address.country,
+        });
+        addressId = createdAddress.id;
+        setCreatedAddressId(addressId);
+      }
 
       const items = cart.items.map((item) => ({
         productId: item.productId,
@@ -81,7 +98,7 @@ export function Checkout() {
       }));
 
       const { data: order } = await apiClient.post("/orders", {
-        addressId: createdAddress.id,
+        addressId,
         items,
       });
 
