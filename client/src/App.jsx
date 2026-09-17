@@ -9,6 +9,7 @@ import { Checkout } from "./pages/Checkout.jsx";
 import { Login } from "./pages/Login.jsx";
 import { Register } from "./pages/Register.jsx";
 import { OrderConfirmation } from "./pages/OrderConfirmation.jsx";
+import { OrderDetail } from "./pages/OrderDetail.jsx";
 import { OrderHistory } from "./pages/OrderHistory.jsx";
 import { AdminDashboard } from "./pages/AdminDashboard.jsx";
 import { NotFound } from "./pages/NotFound.jsx";
@@ -51,6 +52,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <OrderConfirmation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="orders/:orderId"
+          element={
+            <ProtectedRoute>
+              <OrderDetail />
             </ProtectedRoute>
           }
         />

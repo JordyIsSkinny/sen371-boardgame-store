@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../api/client.js";
 import { Checkbox } from "../components/Checkbox.jsx";
 import { FilterChip } from "../components/FilterChip.jsx";
@@ -71,7 +72,17 @@ export function Catalogue() {
   const [status, setStatus] = useState("loading");
 
   // Filter sidebar state — local only, see the note at the top of the file.
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  // selectedCategories seeds from ?category=<name> on first render (#205 –
+  // the Home page's category tiles deep-link here), read once via the
+  // lazy useState initializer rather than an effect, so the sidebar shows
+  // the right checkbox checked on the very first paint instead of an
+  // unfiltered flash. searchParams itself isn't kept in sync afterwards –
+  // this is a one-time seed, not two-way URL binding.
+  const [searchParams] = useSearchParams();
+  const [selectedCategories, setSelectedCategories] = useState(() => {
+    const category = searchParams.get("category");
+    return category ? [category] : [];
+  });
   const [playerCount, setPlayerCount] = useState("");
   const [selectedPlaytime, setSelectedPlaytime] = useState([]);
   const [ageRating, setAgeRating] = useState("");

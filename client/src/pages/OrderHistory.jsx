@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { apiClient } from "../api/client.js";
 import { LoadingState } from "../components/LoadingState.jsx";
 import { EmptyState } from "../components/EmptyState.jsx";
@@ -23,8 +24,10 @@ import { ErrorState } from "../components/ErrorState.jsx";
 // "Write a review" only renders for delivered orders now, matching Figma
 // (node 138:530, shown only on the one delivered example) — it isn't
 // wired to anything yet (no review-composer route exists from this
-// screen), same as "View details" isn't wired to an order-detail route
-// either. Both are visual-only until those routes exist.
+// screen), still visual-only until one does. "View details" used to be
+// in the same boat, but that route now exists (#204, OrderDetail.jsx) —
+// found unwired during the #151 usability session, hit independently by
+// two participants.
 
 const statusLabels = {
   pending: "Pending payment",
@@ -183,12 +186,12 @@ export function OrderHistory() {
                     <p className="hidden font-body text-small text-primary-500 sm:block">Write a review</p>
                   )}
 
-                  <button
-                    type="button"
+                  <Link
+                    to={`/orders/${order.id}`}
                     className="rounded-input border border-primary-500 bg-white px-5 py-2.5 font-body text-small font-medium text-primary-700 transition hover:bg-primary-100"
                   >
                     View details
-                  </button>
+                  </Link>
                 </div>
               </div>
             </article>

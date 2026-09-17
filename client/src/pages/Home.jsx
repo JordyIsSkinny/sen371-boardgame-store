@@ -18,9 +18,10 @@ import { apiClient } from "../api/client.js";
 //   showing an arbitrary set of products under a rating claim nothing
 //   backs; "New arrivals" (real: sorted by createdAt) stands alone.
 //
-// Category tiles link to /catalogue rather than a pre-filtered view —
-// Catalogue's filters are local-only state until #75 wires them to query
-// params, so there's nothing to deep-link into yet.
+// Category tiles deep-link to /catalogue?category=<name> (#205 – a
+// usability session participant found every tile landing on the
+// unfiltered view, since this used to just link to plain /catalogue).
+// Catalogue.jsx reads that param once on mount to seed selectedCategories.
 
 const TILE_COLORS = ["bg-primary-500", "bg-success", "bg-warning", "bg-primary-700", "bg-primary-900"];
 
@@ -153,7 +154,7 @@ export function Home() {
                 {categories.map((category, i) => (
                   <Link
                     key={category.id}
-                    to="/catalogue"
+                    to={`/catalogue?category=${encodeURIComponent(category.name)}`}
                     className={`flex h-[140px] items-end overflow-hidden rounded-modal p-4 text-body-lg font-medium text-white transition hover:opacity-90 ${TILE_COLORS[i % TILE_COLORS.length]}`}
                   >
                     {category.name}
