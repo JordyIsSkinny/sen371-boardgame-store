@@ -1,26 +1,21 @@
 import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { apiClient } from "../api/client.js";
 import { Button } from "../components/Button.jsx";
 import { Input } from "../components/Input.jsx";
 import { LoadingState } from "../components/LoadingState.jsx";
+import { EmptyState } from "../components/EmptyState.jsx";
 import { ErrorState } from "../components/ErrorState.jsx";
 
-// S5 Checkout (issue #76, stretch). Collects a delivery address and shows
-// the cart summary the order would be placed against.
-//
-// Known gap, not fixed here: POST /orders requires an addressId, but no
-// endpoint exists anywhere in this API to create an address (confirmed via
-// findstr across every route file — nothing handles POST /addresses).
-// Building that properly (repository, route, validation, tests, matching
-// the pattern every other M2/M3 endpoint follows) is real scope beyond
-// #76's stretch-goal time budget tonight. Rather than fake a working
-// checkout, the form collects real input and the cart summary is real
-// data, but submission is disabled with an explicit message instead of
-// silently failing or pretending to succeed.
+// S5 Checkout (issue #76, stretch; wired to the real API in #175).
+// Collects a delivery address and places a real order against it:
+// POST /addresses (adding the address, #120) then POST /orders with the
+// cart's items, then navigates to the order's confirmation screen.
 
 const currency = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
 
 export function Checkout() {
+  const navigate = useNavigate();
   const [cart, setCart] = useState(null);
   const [status, setStatus] = useState("loading");
   const [address, setAddress] = useState({
@@ -31,6 +26,15 @@ export function Checkout() {
     postalCode: "",
     country: "South Africa",
   });
+   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  // Set once an address is successfully created; skips re-creating it on a
+  // retry after a failed POST /orders (e.g. stock hit zero between
+  // add-to-cart and checkout) — otherwise every retry orphaned another
+  // address row that no order ever ended up referencing. Cleared whenever
+  // the form changes, so an edited address gets created fresh rather than
+  // the order being placed against stale, already-submitted details.
+  const [createdAddressId, setCreatedAddressId] = useState(null);
 
   useEffect(() => {
     loadCart();
@@ -50,6 +54,62 @@ export function Checkout() {
 
   function updateField(field, value) {
     setAddress((prev) => ({ ...prev, [field]: value }));
+    setCreatedAddressId(null);
+  }
+  const hasRequiredAddressFields =
+    address.line1.trim() !== "" &&
+    address.city.trim() !== "" &&
+    address.provinceState.trim() !== "" &&
+    address.postalCode.trim() !== "" &&
+    address.country.trim() !== "";
+
+  const canSubmit =
+    hasRequiredAddressFields && cart?.items.length > 0 && !submitting;
+
+  async function placeOrder() {
+    setSubmitError(null);
+    setSubmitting(true);
+
+     try {
+      let addressId = createdAddressId;
+
+      if (!addressId) {
+        // userId is taken from the caller's token server-side, never from
+        // this body — same rule as every other write in this app.
+        const trimmedLine2 = address.line2.trim();
+        const { data: createdAddress } = await apiClient.post("/addresses", {
+          line1: address.line1,
+          // .trim() first: a whitespace-only line2 (e.g. a single space)
+          // is truthy, so a bare `|| undefined` wouldn't catch it and a
+          // blank-looking value would get persisted as real content.
+          line2: trimmedLine2 || undefined,
+          city: address.city,
+          provinceState: address.provinceState,
+          postalCode: address.postalCode,
+          country: address.country,
+        });
+        addressId = createdAddress.id;
+        setCreatedAddressId(addressId);
+      }
+
+      const items = cart.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      }));
+
+      const { data: order } = await apiClient.post("/orders", {
+        addressId,
+        items,
+      });
+
+      navigate(`/orders/${order.id}/confirmation`);
+    } catch (err) {
+      console.error("Failed to place order:", err);
+      setSubmitError(
+        err.message || "Couldn't place your order. Please try again.",
+      );
+      setSubmitting(false);
+    }
   }
 
   if (status === "loading") {
@@ -58,6 +118,20 @@ export function Checkout() {
 
   if (status === "error") {
     return <ErrorState message="Couldn't load your cart." onRetry={loadCart} />;
+  }
+
+  if (cart.items.length === 0) {
+    return (
+      <div className="flex flex-col items-center">
+        <EmptyState
+          title="Your cart is empty."
+          message="Add a few games before checking out."
+        />
+        <Link to="/catalogue">
+          <Button>Browse games</Button>
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -109,10 +183,9 @@ export function Checkout() {
             </div>
           </div>
 
-          <p className="mt-4 text-sm text-neutral-500">
-            Address saving isn't wired up to the API yet, so orders can't be placed from here yet — this
-            screen shows the intended flow and real cart data.
-          </p>
+          {submitError && (
+            <p className="mt-4 text-sm text-error">{submitError}</p>
+          )}
         </div>
 
         <div className="w-full max-w-xs rounded-card border border-neutral-200 bg-white p-4">
@@ -134,8 +207,12 @@ export function Checkout() {
             <span className="font-semibold text-primary-900">{currency.format(cart.subtotal)}</span>
           </div>
 
-          <Button state="disabled" className="mt-4 w-full">
-            Place order
+          <Button
+            state={canSubmit ? "default" : "disabled"}
+            className="mt-4 w-full"
+            onClick={placeOrder}
+          >
+            {submitting ? "Placing order..." : "Place order"}
           </Button>
         </div>
       </div>

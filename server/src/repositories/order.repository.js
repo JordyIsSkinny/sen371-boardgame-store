@@ -1,4 +1,6 @@
 import { prisma } from '../lib/prismaClient.js';
+import NotFoundError from '../errors/not-found-error.js';
+import ConflictError from '../errors/conflict-error.js';
 
 export async function createOrder({ userId, addressId, items }) {
   return prisma.$transaction(async (tx) => {
@@ -12,11 +14,13 @@ export async function createOrder({ userId, addressId, items }) {
       });
 
       if (!product) {
-        throw new Error(`Product ${item.productId} not found`);
+        throw new NotFoundError(`Product ${item.productId} not found.`);
       }
 
       if (!product.inventory || product.inventory.quantityOnHand < item.quantity) {
-        throw new Error(`Insufficient stock for product ${item.productId}`);
+        throw new ConflictError(
+          `Insufficient stock for product ${item.productId}; only ${product.inventory?.quantityOnHand ?? 0} available.`,
+        );
       }
 
       const unitPrice = product.price;
@@ -52,6 +56,22 @@ const shippingFee = 0;
         },
       },
       include: { items: true },
+    });
+
+    // Clear the cart items this order was placed from, inside the same
+    // transaction as the order itself: without this, a successful
+    // purchase left the same items sitting in the cart, so navigating
+    // back to /cart or /checkout (browser back, a stale tab) and
+    // resubmitting created a second order and decremented stock a
+    // second time for goods already bought. Scoped to the ordered
+    // productIds rather than the whole cart, since nothing here
+    // guarantees the cart couldn't hold other items in a future
+    // partial-checkout flow.
+    await tx.cartItem.deleteMany({
+      where: {
+        userId,
+        productId: { in: items.map((item) => item.productId) },
+      },
     });
 
      return order;
