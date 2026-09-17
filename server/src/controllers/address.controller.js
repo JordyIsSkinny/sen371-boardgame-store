@@ -2,8 +2,10 @@ import * as addressService from "../services/address.service.js";
 
 export async function createAddress(req, res, next) {
   try {
-    const { line1, line2, city, provinceState, postalCode, country, isDefault } = req.body;
+    const { fullName, phone, line1, line2, city, provinceState, postalCode, country, isDefault } = req.body;
     const address = await addressService.createAddress(req.user.id, {
+      fullName,
+      phone,
       line1,
       line2,
       city,

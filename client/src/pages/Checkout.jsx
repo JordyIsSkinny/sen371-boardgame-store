@@ -18,7 +18,9 @@ export function Checkout() {
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
   const [status, setStatus] = useState("loading");
-  const [address, setAddress] = useState({
+   const [address, setAddress] = useState({
+    fullName: "",
+    phone: "",
     line1: "",
     line2: "",
     city: "",
@@ -26,7 +28,7 @@ export function Checkout() {
     postalCode: "",
     country: "South Africa",
   });
-   const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   // Set once an address is successfully created; skips re-creating it on a
   // retry after a failed POST /orders (e.g. stock hit zero between
@@ -56,7 +58,10 @@ export function Checkout() {
     setAddress((prev) => ({ ...prev, [field]: value }));
     setCreatedAddressId(null);
   }
+
   const hasRequiredAddressFields =
+    address.fullName.trim() !== "" &&
+    address.phone.trim() !== "" &&
     address.line1.trim() !== "" &&
     address.city.trim() !== "" &&
     address.provinceState.trim() !== "" &&
@@ -78,6 +83,8 @@ export function Checkout() {
         // this body — same rule as every other write in this app.
         const trimmedLine2 = address.line2.trim();
         const { data: createdAddress } = await apiClient.post("/addresses", {
+          fullName: address.fullName,
+          phone: address.phone,
           line1: address.line1,
           // .trim() first: a whitespace-only line2 (e.g. a single space)
           // is truthy, so a bare `|| undefined` wouldn't catch it and a
@@ -147,6 +154,16 @@ export function Checkout() {
           <h2 className="text-h4 font-heading text-primary-900">Delivery address</h2>
 
           <div className="mt-4 flex flex-col gap-4">
+                      <Input
+              placeholder="Full name"
+              value={address.fullName}
+              onChange={(e) => updateField("fullName", e.target.value)}
+            />
+            <Input
+              placeholder="Phone number"
+              value={address.phone}
+              onChange={(e) => updateField("phone", e.target.value)}
+            />
             <Input
               placeholder="Address line 1"
               value={address.line1}

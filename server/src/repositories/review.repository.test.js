@@ -34,9 +34,11 @@ beforeAll(async () => {
     },
   });
 
-  testAddress = await prisma.address.create({
+   testAddress = await prisma.address.create({
     data: {
       userId: testUser.id,
+      fullName: 'Review Tester',
+      phone: '0821234567',
       line1: '1 Review Street',
       city: 'Pretoria',
       provinceState: 'Gauteng',

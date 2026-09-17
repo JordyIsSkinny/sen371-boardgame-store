@@ -5,6 +5,7 @@ import {
   createProductSchema,
   productQuerySchema,
   userQuerySchema,
+  isValidPhone,
 } from "./validate.js";
 
 describe("validate middleware", () => {
@@ -211,6 +212,46 @@ describe("validate middleware", () => {
     const errors = userQuerySchema({});
 
     expect(errors).toEqual([]);
+  });
+
+  describe("isValidPhone", () => {
+    it("accepts an ordinary local number", () => {
+      expect(isValidPhone("0821234567")).toBe(true);
+    });
+
+    it("accepts international format with a leading +", () => {
+      expect(isValidPhone("+27821234567")).toBe(true);
+    });
+
+    it("accepts a number with spaces or dashes", () => {
+      expect(isValidPhone("082 123 4567")).toBe(true);
+      expect(isValidPhone("082-123-4567")).toBe(true);
+    });
+
+    it("rejects a string with no digits at all", () => {
+      // Previously matched: [\d\s-] also matches whitespace and dashes
+      // alone, so seven dashes passed as a "valid phone number".
+      expect(isValidPhone("-------")).toBe(false);
+      expect(isValidPhone("       ")).toBe(false);
+    });
+
+    it("rejects a string one character over the addresses.phone VARCHAR(20) limit", () => {
+      // Previously the regex allowed a leading + PLUS up to 20 more
+      // characters (21 total), passing validation and then failing at
+      // the database as an unmapped truncation error.
+      expect(isValidPhone("+27123456789012345678")).toBe(false); // 21 chars
+      expect(isValidPhone("+2712345678901234567")).toBe(true); // 20 chars, the real limit
+    });
+
+    it("rejects a string shorter than 7 characters", () => {
+      expect(isValidPhone("123")).toBe(false);
+    });
+
+    it("rejects non-string input", () => {
+      expect(isValidPhone(1234567890)).toBe(false);
+      expect(isValidPhone(null)).toBe(false);
+      expect(isValidPhone(undefined)).toBe(false);
+    });
   });
 
 });

@@ -52,6 +52,8 @@ describe('createAddress', () => {
   it('creates an address owned by the given user', async () => {
     const address = await createAddress({
       userId: testUser.id,
+      fullName: 'Jane Reviewer',
+      phone: '0821234567',
       line1: '1 Review Street',
       city: 'Pretoria',
       provinceState: 'Gauteng',
@@ -62,6 +64,8 @@ describe('createAddress', () => {
 
     expect(address).not.toBeNull();
     expect(address.userId).toBe(testUser.id);
+    expect(address.fullName).toBe('Jane Reviewer');
+    expect(address.phone).toBe('0821234567');
     expect(address.line1).toBe('1 Review Street');
     expect(address.city).toBe('Pretoria');
     expect(address.isDefault).toBe(false);
@@ -70,6 +74,8 @@ describe('createAddress', () => {
   it('accepts an optional line2 and isDefault', async () => {
     const address = await createAddress({
       userId: testUser.id,
+      fullName: 'Jane Reviewer',
+      phone: '0821234567',
       line1: '2 Review Street',
       line2: 'Unit 4',
       city: 'Pretoria',
@@ -90,6 +96,8 @@ describe('getAddressesByUser', () => {
     const otherAddress = await prisma.address.create({
       data: {
         userId: otherUser.id,
+        fullName: 'Other Reviewer',
+        phone: '0837654321',
         line1: '9 Other Street',
         city: 'Cape Town',
         provinceState: 'Western Cape',
