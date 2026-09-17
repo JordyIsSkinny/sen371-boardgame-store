@@ -89,7 +89,7 @@ export async function getOrdersByUser(userId) {
 export async function getOrderById(id) {
   return prisma.order.findUnique({
     where: { id },
-    include: { items: true },
+    include: { items: true, address: true },
   });
 }
 
