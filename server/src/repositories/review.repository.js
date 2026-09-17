@@ -61,52 +61,143 @@ export async function getReviewById(id) {
   });
 }
 
+// #163: averageRating/reviewCount on Product are denormalised for cheap
+// reads on the catalogue (see the schema comment for why), recomputed here
+// on every write instead. Always called inside the same transaction as the
+// review write it follows, so the two can never drift out of sync - if the
+// recompute fails, the review write rolls back with it.
+//
+// lockProductRow is always called BEFORE the review-table write in this
+// same transaction, never after - not just before the aggregate read.
+// Locking after the write deadlocks: inserting a review implicitly takes a
+// FOR KEY SHARE lock on the referenced product row (Postgres protecting the
+// foreign key), so if two concurrent writes on the same product both
+// insert first and then try to upgrade to FOR UPDATE, each already holds
+// the lock the other is waiting to acquire - a real AB-BA deadlock,
+// confirmed while testing this (Postgres error 40P01), not a theoretical
+// concern. Locking first means this transaction's own later FOR KEY SHARE
+// never conflicts with itself, and a second transaction arriving after
+// this one just waits cleanly for the lock to release, no cycle possible.
+async function lockProductRow(tx, productId) {
+  await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`;
+}
+
+async function recomputeProductRating(tx, productId) {
+  const aggregate = await tx.review.aggregate({
+    where: { productId },
+    _avg: { rating: true },
+    _count: true,
+  });
+
+  await tx.product.update({
+    where: { id: productId },
+    data: {
+      // Null, not zero, when the last review is deleted - "not yet rated"
+      // is a different thing from "rated zero stars".
+      averageRating: aggregate._count > 0 ? aggregate._avg.rating : null,
+      reviewCount: aggregate._count,
+    },
+  });
+}
+
 export async function createReview({
   userId,
   productId,
   rating,
   comment,
 }) {
-  return prisma.review.create({
-    data: {
-      userId,
-      productId,
-      rating,
-      comment,
-    },
+  return prisma.$transaction(async (tx) => {
+    await lockProductRow(tx, productId);
+
+    const review = await tx.review.create({
+      data: {
+        userId,
+        productId,
+        rating,
+        comment,
+      },
+    });
+
+    await recomputeProductRating(tx, productId);
+
+    return review;
   });
 }
 
 export async function updateReview(id, userId, data) {
-  return prisma.review.update({
-    where: {
-      id,
-      userId,
-    },
-    data,
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.review.findUnique({ where: { id }, select: { productId: true } });
+    if (existing) {
+      await lockProductRow(tx, existing.productId);
+    }
+
+    const review = await tx.review.update({
+      where: {
+        id,
+        userId,
+      },
+      data,
+    });
+
+    await recomputeProductRating(tx, review.productId);
+
+    return review;
   });
 }
 export async function updateReviewAsAdmin(id, data) {
-  return prisma.review.update({
-    where: {
-      id,
-    },
-    data,
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.review.findUnique({ where: { id }, select: { productId: true } });
+    if (existing) {
+      await lockProductRow(tx, existing.productId);
+    }
+
+    const review = await tx.review.update({
+      where: {
+        id,
+      },
+      data,
+    });
+
+    await recomputeProductRating(tx, review.productId);
+
+    return review;
   });
 }
 export async function deleteReview(id, userId) {
-  return prisma.review.delete({
-    where: {
-      id,
-      userId,
-    },
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.review.findUnique({ where: { id }, select: { productId: true } });
+    if (existing) {
+      await lockProductRow(tx, existing.productId);
+    }
+
+    const review = await tx.review.delete({
+      where: {
+        id,
+        userId,
+      },
+    });
+
+    await recomputeProductRating(tx, review.productId);
+
+    return review;
   });
 }
 export async function deleteReviewAsAdmin(id) {
-  return prisma.review.delete({
-    where: {
-      id,
-    },
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.review.findUnique({ where: { id }, select: { productId: true } });
+    if (existing) {
+      await lockProductRow(tx, existing.productId);
+    }
+
+    const review = await tx.review.delete({
+      where: {
+        id,
+      },
+    });
+
+    await recomputeProductRating(tx, review.productId);
+
+    return review;
   });
 }
 

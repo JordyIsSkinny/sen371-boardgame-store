@@ -95,6 +95,17 @@ model Product {
   price            Decimal  @db.Decimal(10, 2)
   imageUrl         String?  @map("image_url") @db.VarChar(500)
   isActive         Boolean  @default(true) @map("is_active")
+  // Denormalised, recomputed inside the same transaction as every review
+  // write (create/update/delete) — see review.repository.js's
+  // recomputeProductRating. Read-heavy catalogue browsing vastly
+  // outnumbers review writes, and Prisma's orderBy can't sort by an
+  // aggregate over a relation without dropping to raw SQL, so a plain
+  // column here is both the cheaper read path and the one that keeps
+  // filterProducts' existing sortBy pattern working unchanged (#163).
+  // Null, not zero, for a product with no reviews yet — zero would read
+  // as "rated zero stars" instead of "not yet rated".
+  averageRating    Decimal? @map("average_rating") @db.Decimal(2, 1)
+  reviewCount      Int      @default(0) @map("review_count")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -107,7 +118,6 @@ model Product {
   @@index([title])
   @@map("products")
 }
-
 model ProductCategory {
   productId  Int @map("product_id")
   categoryId Int @map("category_id")

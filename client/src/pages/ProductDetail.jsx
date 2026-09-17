@@ -211,9 +211,13 @@ export function ProductDetail() {
 
   const stock = product.inventory?.quantityOnHand ?? 0;
   const inStock = stock > 0;
-  const averageRating = reviews.length
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-    : null;
+  // #163: averageRating/reviewCount now come from the server, computed
+  // over every review a product has. Previously this was
+  // reviews.reduce(...) / reviews.length, averaging only whatever page of
+  // reviews GET /products/:productId/reviews happened to return (that
+  // endpoint defaults to 10 per page) - silently wrong for any product
+  // with more than 10 reviews, not just an approximation.
+  const averageRating = product.averageRating != null ? Number(product.averageRating) : null;
 
   return (
     <section>
@@ -246,7 +250,7 @@ export function ProductDetail() {
             <div className="mt-2 flex items-center gap-2 text-small text-neutral-700">
               <Stars value={averageRating} />
               <span>
-                {averageRating.toFixed(1)} out of 5 · {reviews.length} review{reviews.length === 1 ? "" : "s"}
+                            {averageRating.toFixed(1)} out of 5 · {product.reviewCount} review{product.reviewCount === 1 ? "" : "s"}
               </span>
             </div>
           )}
@@ -351,7 +355,7 @@ export function ProductDetail() {
                   : "text-neutral-500 hover:text-neutral-700"
               }`}
             >
-              {tab === "Reviews" ? `Reviews (${reviews.length})` : tab}
+                            {tab === "Reviews" ? `Reviews (${product.reviewCount})` : tab}
             </button>
           ))}
         </div>
@@ -460,8 +464,10 @@ export function ProductDetail() {
                 title={p.title}
                 category={p.categories?.[0]?.name}
                 stats={formatStats(p)}
-                price={p.price}
+                           price={p.price}
                 imageUrl={p.imageUrl}
+                rating={p.averageRating}
+                reviewCount={p.reviewCount}
                 status={stockStatus(p.inventory?.quantityOnHand ?? 0)}
               />
             ))}

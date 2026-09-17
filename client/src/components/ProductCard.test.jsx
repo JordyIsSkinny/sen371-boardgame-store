@@ -54,4 +54,14 @@ describe("ProductCard", () => {
     expect(screen.getByText(/4\.5/)).toBeInTheDocument();
     expect(screen.getByText(/\(128\)/)).toBeInTheDocument();
   });
+
+  it("renders a string rating without crashing", () => {
+    // averageRating is a Prisma Decimal, which serialises over JSON as a
+    // string ("4.5"), not a number - Catalogue.jsx and ProductDetail.jsx's
+    // related-products list both pass it straight through unconverted.
+    // A raw number literal here would never catch a regression, since
+    // (4.5).toFixed(1) already works fine; only a string does not.
+    renderCard({ rating: "4.5", reviewCount: 2 });
+    expect(screen.getByText(/4\.5/)).toBeInTheDocument();
+  });
 });

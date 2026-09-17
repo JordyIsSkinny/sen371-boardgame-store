@@ -47,9 +47,13 @@ export function ProductCard({
         <h3 className="font-heading text-body-lg font-medium text-neutral-900">{title}</h3>
         {category && <p className="text-small text-neutral-500">{category}</p>}
         {stats && <p className="text-caption text-neutral-700">{stats}</p>}
-        {rating != null && (
+              {rating != null && (
           <p className="text-small text-neutral-700">
-            &#9733; {rating.toFixed(1)} {reviewCount != null && `(${reviewCount})`}
+            {/* averageRating is a Prisma Decimal, which serialises over
+                JSON as a string, not a number - Number() here matches how
+                price is already handled two lines down, rather than
+                relying on every caller to convert it before passing it in. */}
+            &#9733; {Number(rating).toFixed(1)} {reviewCount != null && `(${reviewCount})`}
           </p>
         )}
 
