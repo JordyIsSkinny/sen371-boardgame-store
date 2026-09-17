@@ -1,11 +1,12 @@
 import { prisma } from '../lib/prismaClient.js';
+import NotFoundError from '../errors/not-found-error.js';
 import ConflictError from '../errors/conflict-error.js';
 
 export async function createPayment({ orderId, method }) {
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({ where: { id: orderId } });
     if (!order) {
-      throw new Error(`Order ${orderId} not found`);
+      throw new NotFoundError(`Order ${orderId} not found.`);
     }
 
     const existingPayment = await tx.payment.findUnique({ where: { orderId } });

@@ -19,10 +19,14 @@ import { ProductCard } from "../components/ProductCard.jsx";
 //
 // A few things the design shows that the schema can't back are
 // deliberately left out rather than faked, tracked in #111: mechanics
-// chips (Product has no mechanics field, same gap as Catalogue's filter),
-// a Year attribute (no column for it), and the three image thumbnails
-// under the main photo (Product has one imageUrl, not a gallery) — the
-// main image is shown alone instead.
+// chips (Product has no mechanics field, same gap as Catalogue's filter)
+// and the three image thumbnails under the main photo (Product has one
+// imageUrl, not a gallery) — the main image is shown alone instead.
+// A third gap, the Year attribute, is resolved rather than open: #162
+// decided against a schema column, since nothing else in the app reads
+// a product's year and it isn't part of the M1 data dictionary either —
+// adding one just to backfill real release years for 53 real games,
+// with nothing depending on the result, wasn't worth it.
 //
 // "Add to Cart" posts straight to POST /cart/items via apiClient, the same
 // direct-call pattern Catalogue (S2) uses — there's no CartContext yet

@@ -84,9 +84,11 @@ process.env.CLIENT_ORIGIN = 'http://localhost:5173';
   email: otherUser.email,
 });
 
-  testAddress = await prisma.address.create({
+    testAddress = await prisma.address.create({
     data: {
       userId: testUser.id,
+      fullName: 'Route Tester',
+      phone: '0821234567',
       line1: '123 Test Street',
       city: 'Pretoria',
       provinceState: 'Gauteng',

@@ -65,6 +65,8 @@ model RefreshToken {
 model Address {
   id            Int     @id @default(autoincrement())
   userId        Int     @map("user_id")
+  fullName      String  @map("full_name") @db.VarChar(255)
+  phone         String  @db.VarChar(20)
   line1         String  @db.VarChar(255)
   line2         String? @db.VarChar(255)
   city          String  @db.VarChar(100)
@@ -78,7 +80,6 @@ model Address {
 
   @@map("addresses")
 }
-
 model Product {
   id               Int      @id @default(autoincrement())
   title            String   @db.VarChar(255)
