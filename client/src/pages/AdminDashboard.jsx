@@ -454,7 +454,7 @@ export function AdminDashboard() {
                       <ProductSwatch product={product} />
                       <span className="font-medium text-neutral-900">{product.title}</span>
                     </td>
-                    <td className="p-3 text-neutral-700">{product.categories?.[0]?.name ?? "—"}</td>
+                    <td className="p-3 text-neutral-700">{product.categories?.[0]?.name ?? "-"}</td>
                     <td className="p-3 text-neutral-700">
                       {isEditing ? (
                         <Input
