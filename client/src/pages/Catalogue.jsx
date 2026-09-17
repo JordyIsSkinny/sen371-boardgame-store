@@ -33,12 +33,10 @@ import { LoadingState } from "../components/LoadingState.jsx";
 // hooks) is issue #75, not this one. Every place that boundary applies is
 // commented below.
 //
-// Two more gaps the real design has that this doesn't, tracked in #111:
-// ProductCard omits the star-rating line Figma shows on every card (`★ 4.4
-// (42)`) — GET /products doesn't return an aggregate rating, and faking one
-// would be worse than not showing it. Sort also has no Rating option
-// (Figma defaults to "Sort: Rating") for the same reason: nothing computes
-// one server-side yet.
+// The two gaps the real design had that this used to lack, tracked in
+// #111, are closed by #163: GET /products now returns an aggregate
+// rating and review count, and Sort's Rating option is real rather than
+// a no-op fallback to newest.
 
 const PLAYTIME_BUCKETS = [
   { label: "Under 30 min", max: 30 },
@@ -135,9 +133,10 @@ export function Catalogue() {
           "price-desc": ["price", "desc"],
           title: ["title", "asc"],
           newest: ["createdAt", "desc"],
-          // "rating" has no server-side field yet (#111) — falls back to
-          // newest rather than sending a sortBy the API doesn't recognise.
-          rating: ["createdAt", "desc"],
+                   // The server now computes an aggregate rating (#163) - sends the
+          // real sortBy the API understands rather than the previous
+          // fallback-to-newest workaround.
+          rating: ["rating", "desc"],
         };
         const [sortBy, sortDir] = sortMap[sort] ?? ["createdAt", "desc"];
         params.set("sortBy", sortBy);
@@ -352,10 +351,7 @@ export function Catalogue() {
                 onChange={(e) => setSort(e.target.value)}
                 className="rounded-input border border-neutral-200 px-2 py-1.5 text-sm"
               >
-                {/* "Rating" matches Figma's default, but nothing computes an
-                    aggregate rating server-side yet (#111) — selecting it
-                    is a no-op until #75 wires sorting up regardless. */}
-                <option value="rating">Rating</option>
+                              <option value="rating">Rating</option>
                 <option value="newest">Newest</option>
                 <option value="price-asc">Price: low to high</option>
                 <option value="price-desc">Price: high to low</option>
@@ -392,8 +388,10 @@ export function Catalogue() {
                   title={product.title}
                   category={product.categories[0]?.name}
                   stats={formatStats(product)}
-                  price={product.price}
+                                 price={product.price}
                   imageUrl={product.imageUrl}
+                  rating={product.averageRating}
+                  reviewCount={product.reviewCount}
                   status={stockStatus(product.inventory?.quantityOnHand ?? 0)}
                 />
               ))}

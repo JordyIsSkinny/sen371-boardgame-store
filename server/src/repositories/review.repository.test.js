@@ -34,10 +34,10 @@ beforeAll(async () => {
     },
   });
 
-  testAddress = await prisma.address.create({
+   testAddress = await prisma.address.create({
     data: {
       userId: testUser.id,
-      line1: '1 Review Street',
+            line1: '1 Review Street',
       city: 'Pretoria',
       provinceState: 'Gauteng',
       postalCode: '0001',
@@ -189,6 +189,105 @@ describe('createReview', () => {
     expect(testReview.productId).toBe(testProduct.id);
     expect(testReview.rating).toBe(5);
     expect(testReview.comment).toBe('Excellent game!');
+  });
+});
+
+// #163: isolated from testProduct on purpose - createReview/updateReview/
+// deleteReview above and below all mutate testProduct's rating as a side
+// effect too now, so asserting exact averages against a product other
+// tests are concurrently reviewing would be order-dependent and fragile.
+describe('aggregate rating recompute', () => {
+  let ratingProduct;
+  let otherRatingUser;
+  const reviewIds = [];
+
+  beforeAll(async () => {
+    ratingProduct = await prisma.product.create({
+      data: {
+        title: 'Rating Aggregate Test Game',
+        slug: `rating-aggregate-test-${Date.now()}`,
+        minPlayers: 2,
+        maxPlayers: 4,
+        playTimeMinutes: 60,
+        minAge: 8,
+        complexityRating: 2.0,
+        price: 400.0,
+      },
+    });
+
+    otherRatingUser = await prisma.user.create({
+      data: {
+        roleId: testRole.id,
+        email: `rating-aggregate-${Date.now()}@example.com`,
+        passwordHash: 'not-a-real-hash',
+        firstName: 'Other',
+        lastName: 'Rater',
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.review.deleteMany({ where: { productId: ratingProduct.id } });
+    await prisma.user.delete({ where: { id: otherRatingUser.id } });
+    await prisma.product.delete({ where: { id: ratingProduct.id } });
+  });
+
+  it('has no rating before any review exists', async () => {
+    const fresh = await prisma.product.findUnique({ where: { id: ratingProduct.id } });
+    expect(fresh.averageRating).toBeNull();
+    expect(fresh.reviewCount).toBe(0);
+  });
+
+  it('sets averageRating to the rating and reviewCount to 1 on the first review', async () => {
+    const review = await createReview({
+      userId: testUser.id,
+      productId: ratingProduct.id,
+      rating: 5,
+      comment: 'First review.',
+    });
+    reviewIds.push(review.id);
+
+    const updated = await prisma.product.findUnique({ where: { id: ratingProduct.id } });
+    expect(Number(updated.averageRating)).toBe(5);
+    expect(updated.reviewCount).toBe(1);
+  });
+
+  it('averages correctly across multiple reviews', async () => {
+    const review = await createReview({
+      userId: otherRatingUser.id,
+      productId: ratingProduct.id,
+      rating: 3,
+      comment: 'Second review.',
+    });
+    reviewIds.push(review.id);
+
+    const updated = await prisma.product.findUnique({ where: { id: ratingProduct.id } });
+    expect(Number(updated.averageRating)).toBe(4);
+    expect(updated.reviewCount).toBe(2);
+  });
+
+  it('recomputes when a review is updated', async () => {
+    await updateReview(reviewIds[0], testUser.id, { rating: 1 });
+
+    const updated = await prisma.product.findUnique({ where: { id: ratingProduct.id } });
+    // (1 + 3) / 2 = 2
+    expect(Number(updated.averageRating)).toBe(2);
+    expect(updated.reviewCount).toBe(2);
+  });
+
+  it('recomputes when a review is deleted, back to null/0 once the last one is gone', async () => {
+    await deleteReview(reviewIds[0], testUser.id);
+
+    const updated = await prisma.product.findUnique({ where: { id: ratingProduct.id } });
+    expect(Number(updated.averageRating)).toBe(3);
+    expect(updated.reviewCount).toBe(1);
+
+    // reviewIds[1] belongs to otherRatingUser, not testUser.
+    await deleteReview(reviewIds[1], otherRatingUser.id);
+
+    const afterLastDelete = await prisma.product.findUnique({ where: { id: ratingProduct.id } });
+    expect(afterLastDelete.averageRating).toBeNull();
+    expect(afterLastDelete.reviewCount).toBe(0);
   });
 });
 

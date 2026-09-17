@@ -145,6 +145,12 @@ describe("validate middleware", () => {
       ]),
     );
   });
+       it("accepts rating as a valid sortBy value", () => {
+      // #163: sortBy=rating is now real, not rejected as unknown.
+      const errors = productQuerySchema({ sortBy: "rating" });
+      expect(errors).toEqual([]);
+    });
+
     it("rejects invalid product query parameters", () => {
     const errors = productQuerySchema({
       playerCount: "abc",

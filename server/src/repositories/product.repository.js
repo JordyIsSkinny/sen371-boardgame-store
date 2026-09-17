@@ -96,9 +96,18 @@ export async function filterProducts({
     };
   }
 
-  const allowedSortFields = ['price', 'createdAt', 'title', 'complexityRating'];
-  const orderByField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+   const allowedSortFields = ['price', 'createdAt', 'title', 'complexityRating'];
   const orderByDir = sortDir === 'asc' ? 'asc' : 'desc';
+
+  // "rating" is the public API name; the real column is averageRating
+  // (#163). Unrated products (averageRating is null - never zero, see the
+  // schema comment) always sort last regardless of direction: an unrated
+  // product appearing above five-star ones on a "highest rated" sort would
+  // be actively misleading, not just a minor ordering quirk.
+  const orderBy =
+    sortBy === 'rating'
+      ? { averageRating: { sort: orderByDir, nulls: 'last' } }
+      : { [allowedSortFields.includes(sortBy) ? sortBy : 'createdAt']: orderByDir };
 
   const skip = (Number(page) - 1) * Number(pageSize);
   const take = Number(pageSize);
@@ -106,7 +115,7 @@ export async function filterProducts({
   const [rows, total] = await Promise.all([
     prisma.product.findMany({
       where,
-      orderBy: { [orderByField]: orderByDir },
+      orderBy,
       skip,
       take,
       include: {

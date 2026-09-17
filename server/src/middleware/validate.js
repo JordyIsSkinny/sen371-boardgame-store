@@ -352,11 +352,12 @@ export const productQuerySchema = (query) => {
 
   if (
     query.sortBy !== undefined &&
-    !isValidEnum(query.sortBy, [
+      !isValidEnum(query.sortBy, [
       "price",
       "createdAt",
       "title",
       "complexityRating",
+      "rating",
     ])
   ) {
     errors.push({
