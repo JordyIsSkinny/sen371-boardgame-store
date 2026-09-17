@@ -42,6 +42,23 @@ async function doRefresh() {
   }
 }
 
+// Two tabs of the same account are a normal case (a product page open
+// alongside checkout) and each has its own module instance, so the
+// same-tab guard below has nothing to coordinate with across them — see
+// #199, the cross-tab version of #176's race. The Web Locks API serializes
+// the network call itself across tabs of the same origin, so two tabs never
+// present the same refresh cookie concurrently: whichever tab loses the lock
+// just runs after the winner's rotation has already landed, using the cookie
+// that rotation set. Falls back to running unguarded where Web Locks isn't
+// available (older Safari, jsdom in tests) — same-tab callers are still
+// deduped by the in-flight guard below regardless.
+function refreshAcrossTabs() {
+  if (typeof navigator === "undefined" || !navigator.locks) {
+    return doRefresh();
+  }
+  return navigator.locks.request("auth-refresh", () => doRefresh());
+}
+
 // Refresh tokens rotate on every call (docs/auth-contracts.md), so two
 // concurrent callers would each revoke the other's token and race on which
 // Set-Cookie wins — see #176. Concurrent callers share one in-flight request
@@ -49,7 +66,7 @@ async function doRefresh() {
 let inFlightRefresh = null;
 export async function refreshAccessToken() {
   if (!inFlightRefresh) {
-    inFlightRefresh = doRefresh().finally(() => {
+    inFlightRefresh = refreshAcrossTabs().finally(() => {
       inFlightRefresh = null;
     });
   }
