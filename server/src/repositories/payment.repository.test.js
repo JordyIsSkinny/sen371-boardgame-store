@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '../lib/prismaClient.js';
 import { createPayment, getPaymentByOrderId } from './payment.repository.js';
-
+import NotFoundError from '../errors/not-found-error.js';
 let testUser, testRole, testAddress, testProduct, testOrder;
 
 beforeAll(async () => {
@@ -89,8 +89,8 @@ describe('createPayment', () => {
     15000
   );
 
-  it('throws when the order does not exist', async () => {
-    await expect(createPayment({ orderId: 999999, method: 'card' })).rejects.toThrow();
+  it('throws a NotFoundError when the order does not exist', async () => {
+    await expect(createPayment({ orderId: 999999, method: 'card' })).rejects.toThrow(NotFoundError);
   });
 
   it('throws when a payment already exists for the order', async () => {
