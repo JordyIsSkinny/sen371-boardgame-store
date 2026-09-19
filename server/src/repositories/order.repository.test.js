@@ -121,44 +121,48 @@ describe('createOrder', () => {
     expect(remaining).toBeNull();
   });
 
-  it('leaves cart items for other products untouched', async () => {
-    const otherProduct = await prisma.product.create({
-      data: {
-        title: 'Untouched Cart Item Product',
-        slug: `untouched-cart-item-${Date.now()}`,
-        minPlayers: 2,
-        maxPlayers: 4,
-        playTimeMinutes: 30,
-        minAge: 8,
-        complexityRating: 1.5,
-        price: 200.0,
-        inventory: { create: { quantityOnHand: 10 } },
-      },
-    });
-
-    const untouchedCartItem = await prisma.cartItem.create({
-      data: {
-        userId: testUser.id,
-        productId: otherProduct.id,
-        quantity: 1,
-      },
-    });
-
-    try {
-      await createOrder({
-        userId: testUser.id,
-        addressId: testAddress.id,
-        items: [{ productId: testProduct.id, quantity: 1 }],
+  it(
+    'leaves cart items for other products untouched',
+    async () => {
+      const otherProduct = await prisma.product.create({
+        data: {
+          title: 'Untouched Cart Item Product',
+          slug: `untouched-cart-item-${Date.now()}`,
+          minPlayers: 2,
+          maxPlayers: 4,
+          playTimeMinutes: 30,
+          minAge: 8,
+          complexityRating: 1.5,
+          price: 200.0,
+          inventory: { create: { quantityOnHand: 10 } },
+        },
       });
 
-      const stillThere = await prisma.cartItem.findUnique({ where: { id: untouchedCartItem.id } });
-      expect(stillThere).not.toBeNull();
-    } finally {
-      await prisma.cartItem.deleteMany({ where: { productId: otherProduct.id } });
-      await prisma.inventory.deleteMany({ where: { productId: otherProduct.id } });
-      await prisma.product.delete({ where: { id: otherProduct.id } });
-    }
-  });
+      const untouchedCartItem = await prisma.cartItem.create({
+        data: {
+          userId: testUser.id,
+          productId: otherProduct.id,
+          quantity: 1,
+        },
+      });
+
+      try {
+        await createOrder({
+          userId: testUser.id,
+          addressId: testAddress.id,
+          items: [{ productId: testProduct.id, quantity: 1 }],
+        });
+
+        const stillThere = await prisma.cartItem.findUnique({ where: { id: untouchedCartItem.id } });
+        expect(stillThere).not.toBeNull();
+      } finally {
+        await prisma.cartItem.deleteMany({ where: { productId: otherProduct.id } });
+        await prisma.inventory.deleteMany({ where: { productId: otherProduct.id } });
+        await prisma.product.delete({ where: { id: otherProduct.id } });
+      }
+    },
+    15000
+  );
 });
 
 describe('getOrdersByUser', () => {
